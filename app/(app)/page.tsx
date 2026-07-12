@@ -89,7 +89,7 @@ function StatCard({
   title: string;
   value: number | string;
   sub?: string;
-  icon: () => JSX.Element;
+  icon: React.ComponentType;
   colorClass: string;
   iconColor: string;
 }) {

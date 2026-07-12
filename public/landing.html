@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="en" class="theme-dark">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="TransitOps — Smart Transport Operations Platform. Automate fleet workflows and live vehicle telemetry.">
+  <meta name="description"
+    content="TransitOps — Smart Transport Operations Platform. Automate fleet workflows and live vehicle telemetry.">
   <title>TransitOps — Smart Transport Operations Platform</title>
   <link rel="stylesheet" href="src/design-tokens.css">
   <link rel="stylesheet" href="src/styles.css">
@@ -16,6 +18,7 @@
       min-height: 100vh;
       position: relative;
     }
+
     /* Dynamic background lighting nodes & auras */
     .landing-body::before {
       content: "";
@@ -23,7 +26,7 @@
       inset: 0;
       z-index: -1;
       pointer-events: none;
-      background-image: 
+      background-image:
         radial-gradient(circle at 80% 30%, rgba(108, 92, 231, 0.15) 0%, transparent 50%),
         radial-gradient(circle at 20% 80%, rgba(45, 212, 191, 0.08) 0%, transparent 50%),
         radial-gradient(circle at 50% 50%, rgba(139, 124, 247, 0.06) 0%, transparent 60%),
@@ -48,11 +51,13 @@
       backdrop-filter: blur(12px);
       border-bottom: 1px solid rgba(255, 255, 255, 0.02);
     }
+
     .nav-links {
       display: flex;
       align-items: center;
       gap: var(--space-6);
     }
+
     .nav-link {
       font-size: var(--text-sm);
       font-weight: 500;
@@ -62,9 +67,11 @@
       align-items: center;
       gap: 4px;
     }
+
     .nav-link:hover {
       color: var(--text-primary);
     }
+
     .nav-logo {
       display: flex;
       align-items: center;
@@ -74,6 +81,7 @@
       letter-spacing: var(--tracking-tight);
       color: white;
     }
+
     .nav-logo-mark {
       width: 32px;
       height: 32px;
@@ -96,12 +104,14 @@
       align-items: center;
       min-height: calc(100vh - 80px);
     }
+
     .hero-left {
       display: flex;
       flex-direction: column;
       gap: var(--space-6);
       animation: cardFadeUp 0.8s var(--ease-out);
     }
+
     .hero-title {
       font-size: var(--text-6xl);
       font-weight: 800;
@@ -109,22 +119,26 @@
       letter-spacing: -0.04em;
       color: white;
     }
+
     .hero-title span {
       background: linear-gradient(135deg, var(--cyan-300), var(--violet-400));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
+
     .hero-desc {
       font-size: var(--text-lg);
       color: var(--text-secondary);
       line-height: var(--leading-relaxed);
       max-width: 480px;
     }
+
     .hero-buttons {
       display: flex;
       align-items: center;
       gap: var(--space-4);
     }
+
     .btn-landing-primary {
       padding: var(--space-3) var(--space-7);
       background: var(--violet-gradient);
@@ -138,11 +152,13 @@
       align-items: center;
       gap: 8px;
     }
+
     .btn-landing-primary:hover {
       background: var(--violet-gradient-hover);
       transform: translateY(-2px);
       box-shadow: 0 6px 28px rgba(108, 92, 231, 0.5);
     }
+
     .btn-landing-secondary {
       padding: var(--space-3) var(--space-7);
       background: rgba(255, 255, 255, 0.02);
@@ -156,6 +172,7 @@
       align-items: center;
       gap: 8px;
     }
+
     .btn-landing-secondary:hover {
       background: rgba(255, 255, 255, 0.06);
       border-color: rgba(255, 255, 255, 0.15);
@@ -170,17 +187,20 @@
       padding-top: var(--space-6);
       border-top: 1px solid rgba(255, 255, 255, 0.04);
     }
+
     .hero-stat-item {
       display: flex;
       flex-direction: column;
       gap: 4px;
     }
+
     .hero-stat-val {
       font-size: var(--text-2xl);
       font-weight: 800;
       color: white;
       font-variant-numeric: tabular-nums;
     }
+
     .hero-stat-lbl {
       font-size: var(--text-xs);
       color: var(--text-tertiary);
@@ -196,6 +216,7 @@
       margin-top: var(--space-5);
       opacity: 0.5;
     }
+
     .logo-item {
       font-size: var(--text-lg);
       font-weight: 700;
@@ -211,6 +232,7 @@
       justify-content: center;
       perspective: 1200px;
     }
+
     .dashboard-preview-glow {
       position: absolute;
       width: 480px;
@@ -221,10 +243,17 @@
       pointer-events: none;
       animation: floatGlow 6s ease-in-out infinite alternate;
     }
+
     @keyframes floatGlow {
-      from { transform: translateY(0) scale(1); }
-      to { transform: translateY(-10px) scale(1.1); }
+      from {
+        transform: translateY(0) scale(1);
+      }
+
+      to {
+        transform: translateY(-10px) scale(1.1);
+      }
     }
+
     .dashboard-preview-card {
       width: 520px;
       height: 380px;
@@ -234,7 +263,7 @@
       border-radius: var(--radius-2xl);
       z-index: 2;
       transform: rotateY(-20deg) rotateX(15deg) rotateZ(3deg);
-      box-shadow: 
+      box-shadow:
         -20px 20px 50px rgba(0, 0, 0, 0.7),
         0 0 40px rgba(108, 92, 231, 0.15);
       overflow: hidden;
@@ -242,10 +271,11 @@
       flex-direction: column;
       transition: all var(--duration-medium) var(--ease-spring);
     }
+
     .hero-right:hover .dashboard-preview-card {
       transform: rotateY(-10deg) rotateX(8deg) rotateZ(1deg) scale(1.03);
       border-color: rgba(108, 92, 231, 0.3);
-      box-shadow: 
+      box-shadow:
         -15px 15px 40px rgba(0, 0, 0, 0.8),
         0 0 60px rgba(108, 92, 231, 0.25);
     }
@@ -260,6 +290,7 @@
       padding: 0 var(--space-4);
       background: rgba(255, 255, 255, 0.01);
     }
+
     .preview-body {
       flex: 1;
       padding: var(--space-4);
@@ -267,6 +298,7 @@
       grid-template-columns: 1fr;
       gap: 12px;
     }
+
     .preview-chart-box {
       height: 140px;
       border: 1px solid rgba(255, 255, 255, 0.05);
@@ -275,9 +307,12 @@
       position: relative;
       overflow: hidden;
     }
+
     .preview-chart-line {
       position: absolute;
-      bottom: 10px; left: 0; right: 0;
+      bottom: 10px;
+      left: 0;
+      right: 0;
       height: 80px;
       background: linear-gradient(180deg, rgba(108, 92, 231, 0.2), transparent);
       border-top: 2px solid var(--violet-400);
@@ -298,10 +333,12 @@
       pointer-events: none;
       transition: opacity var(--duration-medium) var(--ease-out);
     }
+
     .login-overlay.active {
       opacity: 1;
       pointer-events: all;
     }
+
     .login-modal {
       width: 400px;
       background: rgba(14, 17, 23, 0.85);
@@ -313,9 +350,11 @@
       transform: scale(0.9) translateY(20px);
       transition: transform var(--duration-medium) var(--ease-spring);
     }
+
     .login-overlay.active .login-modal {
       transform: scale(1) translateY(0);
     }
+
     .login-title {
       font-size: var(--text-2xl);
       font-weight: 800;
@@ -323,6 +362,7 @@
       letter-spacing: var(--tracking-tight);
       margin-bottom: var(--space-2);
     }
+
     .login-input-group {
       display: flex;
       flex-direction: column;
@@ -336,31 +376,45 @@
         padding-top: var(--space-8);
         gap: var(--space-10);
       }
+
       .hero-right {
         order: -1;
       }
+
       .dashboard-preview-card {
         width: 100%;
         max-width: 500px;
       }
     }
+
     @media (max-width: 768px) {
-      .nav-links { display: none; }
-      .hero-title { font-size: var(--text-4xl); }
-      .hero-stats { flex-wrap: wrap; gap: var(--space-4); }
+      .nav-links {
+        display: none;
+      }
+
+      .hero-title {
+        font-size: var(--text-4xl);
+      }
+
+      .hero-stats {
+        flex-wrap: wrap;
+        gap: var(--space-4);
+      }
     }
   </style>
 </head>
+
 <body class="landing-body">
 
   <!-- Navigation bar -->
   <nav class="landing-nav">
     <div class="nav-logo">
       <div class="nav-logo-mark">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="12 2 2 7 12 12 22 7 12 2"/>
-          <polyline points="2 17 12 22 22 17"/>
-          <polyline points="2 12 12 17 22 12"/>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 2 7 12 12 22 7 12 2" />
+          <polyline points="2 17 12 22 22 17" />
+          <polyline points="2 12 12 17 22 12" />
         </svg>
       </div>
       <span>TransitOps</span>
@@ -374,7 +428,8 @@
     </div>
     <div class="flex items-center gap-4">
       <button class="btn-ghost" style="color: white; font-weight: 600;" onclick="openLogin()">Login</button>
-      <button class="btn-landing-primary" style="padding: 10px 20px; font-size: 13px" onclick="openLogin()">Start Free <span data-icon="chevronRight"></span></button>
+      <button class="btn-landing-primary" style="padding: 10px 20px; font-size: 13px" onclick="openLogin()">Start Free
+        <span data-icon="chevronRight"></span></button>
     </div>
   </nav>
 
@@ -383,12 +438,15 @@
     <div class="hero-left">
       <h1 class="hero-title">Automate Your<br><span>Fleet Workflows.</span></h1>
       <p class="hero-desc">
-        AI-powered solutions to boost your transport operations, live diagnostics, routing efficiency, and costs reporting on a single integrated mission control.
+        AI-powered solutions to boost your transport operations, live diagnostics, routing efficiency, and costs
+        reporting on a single integrated mission control.
       </p>
-      
+
       <div class="hero-buttons">
-        <button class="btn-landing-primary" onclick="openLogin()">Start Free Trial <span data-icon="chevronRight"></span></button>
-        <button class="btn-landing-secondary" onclick="showToast('info', 'Schedule Demo', 'Our enterprise team will reach out within 2 hours')">
+        <button class="btn-landing-primary" onclick="openLogin()">Start Free Trial <span
+            data-icon="chevronRight"></span></button>
+        <button class="btn-landing-secondary"
+          onclick="showToast('info', 'Schedule Demo', 'Our enterprise team will reach out within 2 hours')">
           <span data-icon="calendar"></span> Book Demo
         </button>
       </div>
@@ -439,10 +497,13 @@
             </div>
           </div>
           <div class="preview-chart-box">
-            <div style="font-size:9px;color:var(--text-tertiary);margin:10px;text-transform:uppercase;font-weight:700;letter-spacing:0.05em">Real-Time Dispatch Flow</div>
+            <div
+              style="font-size:9px;color:var(--text-tertiary);margin:10px;text-transform:uppercase;font-weight:700;letter-spacing:0.05em">
+              Real-Time Dispatch Flow</div>
             <div class="preview-chart-line"></div>
           </div>
-          <div class="flex items-center justify-between" style="font-size:10px;color:var(--text-secondary);padding-top:4px">
+          <div class="flex items-center justify-between"
+            style="font-size:10px;color:var(--text-secondary);padding-top:4px">
             <span>Server Status: Operational</span>
             <span style="color:var(--cyan-400)">Latency: 14ms</span>
           </div>
@@ -458,24 +519,30 @@
         <div class="login-title">Sign In</div>
         <button class="row-action" style="padding:6px" onclick="closeLogin()"><span data-icon="x"></span></button>
       </div>
-      <p style="font-size:var(--text-sm);color:var(--text-secondary)">Access your TransitOps fleet mission control workspace dashboard.</p>
-      
+      <p style="font-size:var(--text-sm);color:var(--text-secondary)">Access your TransitOps fleet mission control
+        workspace dashboard.</p>
+
       <div class="login-input-group">
         <div>
-          <label style="font-size:11px;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:8px">Email Address</label>
+          <label
+            style="font-size:11px;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:8px">Email
+            Address</label>
           <div class="input-field">
             <input type="email" placeholder="manager@transitops.com" id="loginEmail" value="manager@transitops.com">
           </div>
         </div>
         <div>
-          <label style="font-size:11px;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:8px">Password</label>
+          <label
+            style="font-size:11px;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:8px">Password</label>
           <div class="input-field">
             <input type="password" placeholder="••••••••" id="loginPass" value="password123">
           </div>
         </div>
       </div>
 
-      <button class="btn-primary w-full" style="padding: 12px; justify-content: center; font-size: var(--text-md); margin-bottom:16px" onclick="submitLogin()">
+      <button class="btn-primary w-full"
+        style="padding: 12px; justify-content: center; font-size: var(--text-md); margin-bottom:16px"
+        onclick="submitLogin()">
         Log In to Dashboard
       </button>
       <div style="font-size:11px;color:var(--text-tertiary);text-align:center">
@@ -494,8 +561,26 @@
 
     // Navigation and drawer functions
     function openLogin() {
-      window.location.href = '/login';
+      document.getElementById('loginOverlay').classList.add('active');
+    }
+
+    function closeLogin() {
+      document.getElementById('loginOverlay').classList.remove('active');
+    }
+
+    function closeLoginOnOverlay(e) {
+      if (e.target.id === 'loginOverlay') {
+        closeLogin();
+      }
+    }
+
+    function submitLogin() {
+      showToast('success', 'Authentication Successful', 'Redirecting to your Fleet Control Dashboard...');
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 1200);
     }
   </script>
 </body>
+
 </html>

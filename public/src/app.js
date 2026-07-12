@@ -3,24 +3,6 @@
 // Shared application logic: sidebar, header, theme, toasts
 // ============================================================
 
-// Global cache for logged-in user details
-let currentUser = null;
-
-// Fetch active user details from the Next.js API
-async function fetchCurrentUser() {
-  if (currentUser) return currentUser;
-  try {
-    const res = await fetch('/api/auth/me');
-    if (res.ok) {
-      currentUser = await res.json();
-      return currentUser;
-    }
-  } catch (e) {
-    console.error('Failed to fetch user session', e);
-  }
-  return null;
-}
-
 // ── Icon Injection (replaces data-icon attributes with SVGs) ──
 function injectIcons() {
   document.querySelectorAll('[data-icon]').forEach(el => {
@@ -37,7 +19,7 @@ function animateMetrics() {
   elements.forEach(el => {
     // Parse the inner text or children text
     const text = el.innerText.trim();
-    
+
     // Check if we've already animated this element
     if (el.dataset.animated === "true") return;
     el.dataset.animated = "true";
@@ -63,11 +45,11 @@ function animateMetrics() {
     function step(timestamp) {
       if (!startTimestamp) startTimestamp = timestamp;
       const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-      
+
       // Quad ease-out easing
       const easedProgress = 1 - (1 - progress) * (1 - progress);
       const currentValue = easedProgress * targetValue;
-      
+
       // Format number with decimals & thousands separators
       let formattedVal = currentValue.toFixed(decimals);
       if (decimals === 0) {
@@ -102,26 +84,10 @@ function getCurrentPage() {
   return file.replace('.html', '');
 }
 
-// ── Logout Handler ──
-async function handleLogout() {
-  try {
-    const res = await fetch('/api/auth/logout', { method: 'POST' });
-    if (res.ok) {
-      showToast('success', 'Logged Out', 'Redirecting to sign-in page...');
-      setTimeout(() => {
-        window.location.href = '/login';
-      }, 1000);
-    }
-  } catch (e) {
-    showToast('error', 'Logout Failed', 'Please try again.');
-  }
-}
-
 // ── Sidebar Component ──
-async function renderSidebar() {
+function renderSidebar() {
   const currentPage = getCurrentPage();
   const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
-  const user = await fetchCurrentUser();
 
   const navItems = [
     { id: 'dashboard', icon: 'dashboard', label: 'Dashboard', href: 'index.html' },
@@ -133,11 +99,6 @@ async function renderSidebar() {
     { id: 'reports', icon: 'reports', label: 'Reports', href: 'reports.html' },
   ];
 
-  // Dynamic: Add "Users" tab for System Admins and Fleet Managers
-  if (user && (user.role === 'ADMIN' || user.role === 'FLEET_MANAGER')) {
-    navItems.push({ id: 'users', icon: 'users', label: 'Manage Users', href: '/users' });
-  }
-
   const secondaryItems = [
     { id: 'alerts', icon: 'alerts', label: 'Alerts', href: 'alerts.html' },
     { id: 'settings', icon: 'settings', label: 'Settings', href: 'settings.html' },
@@ -145,10 +106,6 @@ async function renderSidebar() {
 
   const sidebar = document.getElementById('sidebar');
   if (!sidebar) return;
-
-  const initials = user ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) : '??';
-  const displayName = user ? user.name : 'Guest User';
-  const roleDisplay = user ? user.role.replace('_', ' ') : 'Unauthorized';
 
   sidebar.className = `sidebar${isCollapsed ? ' collapsed' : ''}`;
   sidebar.innerHTML = `
@@ -166,7 +123,7 @@ async function renderSidebar() {
       <div class="nav-section-title">Main</div>
       ${navItems.map(item => `
         <a href="${item.href}" class="nav-item${currentPage === item.id ? ' active' : ''}" data-page="${item.id}">
-          <span class="nav-icon">${Icons[item.icon] || Icons.dashboard}</span>
+          <span class="nav-icon">${Icons[item.icon]}</span>
           <span class="nav-label">${item.label}</span>
         </a>
       `).join('')}
@@ -178,19 +135,15 @@ async function renderSidebar() {
         </a>
       `).join('')}
     </nav>
-    <div class="sidebar-bottom" style="display:flex; flex-direction:column; gap: 8px;">
-      <div class="sidebar-user" style="width: 100%;">
-        <div class="avatar" style="background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; width: 34px; height: 34px; border-radius: 50%; font-size: 13px;">${initials}</div>
-        <div style="flex:1;min-width:0; margin-left: 10px;">
-          <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${displayName}</div>
-          <div style="font-size:11px;color:var(--text-tertiary); text-transform: capitalize;">${roleDisplay.toLowerCase()}</div>
+    <div class="sidebar-bottom">
+      <div class="sidebar-user">
+        <div class="avatar">AK</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Arjun Kumar</div>
+          <div style="font-size:11px;color:var(--text-tertiary)">Fleet Manager</div>
         </div>
       </div>
-      <button onclick="handleLogout()" class="nav-item" style="width:100%; border:none; background: rgba(244,63,94,0.08); color:#fb7185; cursor:pointer; padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px; justify-content: center;">
-        <span style="display:inline-block; transform: rotate(180deg);">${Icons.logout || '🚪'}</span>
-        <span>Sign Out</span>
-      </button>
-      <button class="sidebar-collapse-btn" onclick="toggleSidebar()" aria-label="Toggle sidebar" style="margin-top: 4px;">
+      <button class="sidebar-collapse-btn" onclick="toggleSidebar()" aria-label="Toggle sidebar">
         ${Icons.sidebar}
       </button>
     </div>
@@ -266,8 +219,8 @@ function initTheme() {
 function toggleTheme() {
   const isLight = document.documentElement.classList.contains('theme-light');
   if (isLight) {
-    document.documentElement.classList.add('theme-dark');
     document.documentElement.classList.remove('theme-light');
+    document.documentElement.classList.add('theme-dark');
     localStorage.setItem('theme', 'dark');
   } else {
     document.documentElement.classList.add('theme-light');
@@ -281,47 +234,143 @@ function updateThemeIcon() {
   const btn = document.getElementById('themeToggleBtn');
   if (!btn) return;
   const isLight = document.documentElement.classList.contains('theme-light');
-  btn.innerHTML = isLight ? Icons.moon : Icons.sun;
+  btn.innerHTML = isLight ? Icons.sun : Icons.moon;
 }
 
 // ── Toast System ──
-function showToast(type, title, message) {
-  let container = document.getElementById('toastContainer');
+function showToast(type, title, message, duration = 4000) {
+  let container = document.querySelector('.toast-container');
   if (!container) {
     container = document.createElement('div');
-    container.id = 'toastContainer';
     container.className = 'toast-container';
     document.body.appendChild(container);
   }
 
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  
-  const icon = type === 'success' ? Icons.check : (type === 'error' ? Icons.x : Icons.bell);
+  const iconMap = {
+    success: `<span style="color:var(--emerald-400)">${Icons.check}</span>`,
+    error: `<span style="color:var(--coral-400)">${Icons.alertTriangle}</span>`,
+    warning: `<span style="color:var(--amber-400)">${Icons.alertTriangle}</span>`,
+    info: `<span style="color:var(--violet-400)">${Icons.info}</span>`
+  };
 
+  const toast = document.createElement('div');
+  toast.className = 'toast';
   toast.innerHTML = `
-    <div class="toast-icon">${icon}</div>
-    <div style="flex:1">
+    <span class="toast-icon">${iconMap[type] || iconMap.info}</span>
+    <div class="toast-content">
       <div class="toast-title">${title}</div>
       <div class="toast-message">${message}</div>
     </div>
-    <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+    <button class="toast-close" onclick="this.closest('.toast').remove()">
+      ${Icons.x}
+    </button>
   `;
 
   container.appendChild(toast);
 
-  // Automatically remove toast after 4s
   setTimeout(() => {
-    toast.style.animation = 'slideOut 0.25s forwards';
-    setTimeout(() => toast.remove(), 250);
-  }, 4000);
+    toast.classList.add('toast-exit');
+    setTimeout(() => toast.remove(), 200);
+  }, duration);
 }
 
-// ── Global Page Initialization ──
-document.addEventListener('DOMContentLoaded', async () => {
+// ── Star Rating Helper ──
+function renderStars(rating) {
+  let html = '<span class="star-rating">';
+  for (let i = 0; i < 5; i++) {
+    if (i < rating) {
+      html += Icons.star;
+    } else {
+      html += `<span class="star-empty">${Icons.starEmpty}</span>`;
+    }
+  }
+  html += '</span>';
+  return html;
+}
+
+// ── Status Pill Helper ──
+function statusPill(status) {
+  const labels = {
+    'delivered': 'Delivered',
+    'in-transit': 'In Transit',
+    'delayed': 'Delayed',
+    'cancelled': 'Cancelled',
+    'active': 'Active',
+    'off-duty': 'Off Duty',
+    'on-break': 'On Break',
+    'moving': 'Moving',
+    'idle': 'Idle',
+    'alert': 'Alert',
+    'scheduled': 'Scheduled',
+    'in-progress': 'In Progress',
+    'completed': 'Completed',
+    'overdue': 'Overdue',
+    'critical': 'Critical',
+    'high': 'High',
+    'medium': 'Medium',
+    'low': 'Low',
+    'success': 'Success',
+    'warning': 'Warning',
+  };
+  return `<span class="status-pill ${status}">${labels[status] || status}</span>`;
+}
+
+// ── Priority Badge Helper ──
+function priorityBadge(priority) {
+  return `<span class="priority-badge ${priority}">${priority.charAt(0).toUpperCase() + priority.slice(1)}</span>`;
+}
+
+// ── Mobile Navigation ──
+function renderMobileNav() {
+  const currentPage = getCurrentPage();
+  const items = [
+    { id: 'dashboard', icon: 'dashboard', label: 'Home', href: 'index.html' },
+    { id: 'fleet-map', icon: 'fleetMap', label: 'Map', href: 'fleet-map.html' },
+    { id: 'trips', icon: 'trips', label: 'Trips', href: 'trips.html' },
+    { id: 'drivers', icon: 'drivers', label: 'Drivers', href: 'drivers.html' },
+    { id: 'reports', icon: 'reports', label: 'Reports', href: 'reports.html' },
+  ];
+
+  const nav = document.createElement('nav');
+  nav.className = 'mobile-nav';
+  nav.innerHTML = items.map(item => `
+    <a href="${item.href}" class="mobile-nav-item${currentPage === item.id ? ' active' : ''}">
+      ${Icons[item.icon]}
+      <span>${item.label}</span>
+    </a>
+  `).join('');
+  document.body.appendChild(nav);
+}
+
+// ── Init App ──
+function initApp(pageTitle, breadcrumbs) {
   initTheme();
-  // Call sidebar load (requires async fetch user session)
-  await renderSidebar();
+  renderSidebar();
+  renderHeader(pageTitle, breadcrumbs);
+  renderMobileNav();
   injectIcons();
-  animateMetrics();
-});
+
+  // Stagger start the count-ups after DOM is fully painted
+  setTimeout(animateMetrics, 150);
+
+  // Keyboard shortcut for search
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      const search = document.getElementById('globalSearch');
+      if (search) search.focus();
+    }
+  });
+}
+
+// ── Format Currency ──
+function formatCurrency(num) {
+  return '$' + num.toLocaleString();
+}
+
+// ── Format Number ──
+function formatNum(num) {
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+  if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+  return num.toLocaleString();
+}

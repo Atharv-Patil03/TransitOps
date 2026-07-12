@@ -16,7 +16,18 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { number, type, capacity } = body;
+    const {
+      number,
+      type,
+      capacity,
+      licensePlate,
+      make,
+      model,
+      year,
+      status,
+      mileage,
+      fuelType,
+    } = body;
 
     if (!number || !type || !capacity) {
       return NextResponse.json(
@@ -26,7 +37,18 @@ export async function POST(req: NextRequest) {
     }
 
     const vehicle = await prisma.vehicle.create({
-      data: { number, type, capacity: Number(capacity) },
+      data: {
+        number,
+        type,
+        capacity: Number(capacity),
+        licensePlate: licensePlate || `TEMP-${number}-${Math.floor(1000 + Math.random() * 9000)}`,
+        make: make || "Generic",
+        model: model || "Vehicle",
+        year: year ? Number(year) : new Date().getFullYear(),
+        status: status || "ACTIVE",
+        mileage: mileage ? Number(mileage) : 0,
+        fuelType: fuelType || "DIESEL",
+      },
     });
     return NextResponse.json(vehicle, { status: 201 });
   } catch (error: any) {
