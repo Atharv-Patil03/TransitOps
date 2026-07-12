@@ -18,14 +18,14 @@
       font-size: var(--text-md);
       font-weight: var(--weight-semibold);
       border-radius: var(--radius-xl);
-      box-shadow: 0 4px 20px rgba(108, 92, 231, 0.3);
+      box-shadow: 0 4px 20px rgba(0, 168, 119, 0.15);
       transition: all var(--duration-normal) var(--ease-out);
       cursor: pointer;
       border: none;
     }
     .report-generate-btn:hover {
       background: var(--violet-gradient-hover);
-      box-shadow: 0 6px 28px rgba(108, 92, 231, 0.4);
+      box-shadow: 0 6px 28px rgba(0, 168, 119, 0.25);
       transform: translateY(-2px);
     }
     .report-generate-btn:active { transform: scale(0.97); }
@@ -199,6 +199,7 @@
   <script src="src/icons.js"></script>
   <script src="src/mock-data.js"></script>
   <script src="src/charts.js"></script>
+  <script src="src/db.js"></script>
   <script src="src/app.js"></script>
   <script>
     initApp('Reports', ['TransitOps', 'Reports']);
@@ -207,25 +208,25 @@
 
     // Revenue Donut
     Charts.donutChart(document.getElementById('revenueDonut'), [
-      { label: 'Revenue', value: r.totalRevenue, color: '#22C55E' },
+      { label: 'Revenue', value: r.totalRevenue, color: '#00A877' },
       { label: 'Remaining Target', value: 4000000 - r.totalRevenue, color: 'rgba(255,255,255,0.06)' }
     ], { size: 100, strokeWidth: 12, showLegend: false, centerValue: '86%', centerLabel: 'target' });
 
     // Cost Donut
     Charts.donutChart(document.getElementById('costDonut'), [
-      { label: 'Cost', value: r.totalCost, color: '#6C5CE7' },
+      { label: 'Cost', value: r.totalCost, color: '#10B981' },
       { label: 'Budget Left', value: 2500000 - r.totalCost, color: 'rgba(255,255,255,0.06)' }
     ], { size: 100, strokeWidth: 12, showLegend: false, centerValue: '81%', centerLabel: 'budget' });
 
     // Profit Gauge
     Charts.radialProgress(document.getElementById('profitGauge'), r.profitMargin, {
-      size: 100, strokeWidth: 10, color: '#2DD4BF', fontSize: 18
+      size: 100, strokeWidth: 10, color: '#00A877', fontSize: 18
     });
 
     // Revenue/Cost Chart
     Charts.areaChart(document.getElementById('revenueCostChart'), [
-      { label: 'Revenue', data: MockData.revenueTrend.map(d => d.revenue), color: '#22C55E' },
-      { label: 'Cost', data: MockData.revenueTrend.map(d => d.cost), color: '#6C5CE7' }
+      { label: 'Revenue', data: MockData.revenueTrend.map(d => d.revenue), color: '#00A877' },
+      { label: 'Cost', data: MockData.revenueTrend.map(d => d.cost), color: '#10B981' }
     ], MockData.revenueTrend.map(d => d.month), { width: 900, height: 280 });
 
     // Route Performance Table

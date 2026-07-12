@@ -189,29 +189,32 @@
   <script src="src/icons.js"></script>
   <script src="src/mock-data.js"></script>
   <script src="src/charts.js"></script>
+  <script src="src/db.js"></script>
   <script src="src/app.js"></script>
   <script>
     initApp('Live Fleet Map', ['TransitOps', 'Live Fleet Map']);
 
     // Render map pins
     const canvas = document.getElementById('mapCanvas');
-    MockData.vehicles.forEach((v, i) => {
+    const list = DB.getVehicles();
+    list.forEach((v, i) => {
       const pin = document.createElement('div');
-      pin.className = `vehicle-pin ${v.status}`;
+      const mapStatus = v.status === 'On Trip' ? 'moving' : (v.status === 'In Shop' ? 'alert' : 'idle');
+      pin.className = `vehicle-pin ${mapStatus}`;
       const x = 10 + (i % 4) * 20 + Math.random() * 10;
       const y = 8 + Math.floor(i / 4) * 25 + Math.random() * 12;
       pin.style.left = `${x}%`;
       pin.style.top = `${y}%`;
-      pin.title = `${v.plate} — ${v.driver}`;
+      pin.title = `${v.plate} — ${v.name} (${v.status})`;
       pin.addEventListener('click', () => {
-        showToast('info', v.plate, `${v.driver} — ${v.route} — ${v.speed} mph`);
+        showToast('info', v.plate, `${v.name} — Status: ${v.status}`);
       });
       canvas.appendChild(pin);
     });
 
     // Sector breakdown
     const sectorEl = document.getElementById('sectorBreakdown');
-    const colors = ['#6C5CE7', '#8B7CF7', '#2DD4BF', '#F5A623', '#22C55E'];
+    const colors = ['#00A877', '#2DD4BF', '#F5A623', '#22C55E', '#8B7CF7'];
     sectorEl.innerHTML = MockData.sectors.map((s, i) => `
       <div class="sector-item">
         <span class="sector-name">${s.name}</span>
@@ -224,21 +227,24 @@
 
     // Gauge
     Charts.radialProgress(document.getElementById('mapGauge'), 91.2, {
-      size: 80, strokeWidth: 8, color: '#2DD4BF', fontSize: 16
+      size: 80, strokeWidth: 8, color: '#00A877', fontSize: 16
     });
 
     // Vehicle Feed
     const feedEl = document.getElementById('vehicleFeed');
-    feedEl.innerHTML = MockData.vehicles.map(v => `
-      <div class="vehicle-list-item" onclick="showToast('info', '${v.plate}', '${v.driver} — ${v.route}')">
-        <span class="vehicle-list-dot ${v.status}"></span>
-        <div class="vehicle-list-info">
-          <div class="vehicle-list-name">${v.plate} — ${v.driver}</div>
-          <div class="vehicle-list-route">${v.route}</div>
+    feedEl.innerHTML = list.map(v => {
+      const mapStatus = v.status === 'On Trip' ? 'moving' : (v.status === 'In Shop' ? 'alert' : 'idle');
+      return `
+        <div class="vehicle-list-item" onclick="showToast('info', '${v.plate}', '${v.name} — ${v.status}')">
+          <span class="vehicle-list-dot ${mapStatus}"></span>
+          <div class="vehicle-list-info">
+            <div class="vehicle-list-name">${v.plate} — ${v.name}</div>
+            <div class="vehicle-list-route">Status: ${v.status}</div>
+          </div>
+          <span class="vehicle-list-speed">${v.status === 'On Trip' ? 'Dispatched' : v.status}</span>
         </div>
-        <span class="vehicle-list-speed">${v.speed > 0 ? v.speed + ' mph' : v.status === 'alert' ? 'ALERT' : 'Idle'}</span>
-      </div>
-    `).join('');
+      `;
+    }).join('');
     // ── Trigger metric animations ──
     animateMetrics();
   </script>

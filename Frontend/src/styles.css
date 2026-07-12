@@ -301,6 +301,8 @@ table { border-collapse: collapse; width: 100%; }
   border-radius: var(--radius-xl);
   transition: all var(--duration-normal) var(--ease-out);
   box-shadow: 0 2px 12px rgba(108, 92, 231, 0.25);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .btn-primary:hover {
   background: var(--violet-gradient-hover);
@@ -317,6 +319,8 @@ table { border-collapse: collapse; width: 100%; }
   color: var(--text-primary); font-size: var(--text-caption); font-weight: var(--weight-medium);
   border-radius: var(--radius-xl);
   transition: all var(--duration-normal) var(--ease-out);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .btn-secondary:hover {
   background: var(--glass-bg-hover);

@@ -160,6 +160,7 @@
   <script src="src/icons.js"></script>
   <script src="src/mock-data.js"></script>
   <script src="src/charts.js"></script>
+  <script src="src/db.js"></script>
   <script src="src/app.js"></script>
   <script>
     // ── Init ──
@@ -168,12 +169,13 @@
     // ── Render KPIs ──
     function renderKPIs() {
       const kpis = [
-        { key: 'activeVehicles', label: 'Active Vehicles', icon: Icons.truck, sparkKey: 'activeVehicles', color: '#6C5CE7' },
-        { key: 'onTimeDelivery', label: 'On-Time Delivery', icon: Icons.check, sparkKey: 'onTimeDelivery', color: '#22C55E' },
-        { key: 'fuelEfficiency', label: 'Fuel Efficiency', icon: Icons.droplet, sparkKey: 'fuelEfficiency', color: '#2DD4BF' },
-        { key: 'fleetUtilization', label: 'Fleet Utilization', icon: Icons.target, sparkKey: 'fleetUtilization', color: '#8B7CF7' },
-        { key: 'avgTripCost', label: 'Avg. Trip Cost', icon: Icons.dollarSign, sparkKey: 'avgTripCost', color: '#F5A623' },
-        { key: 'openMaintenance', label: 'Open Maintenance', icon: Icons.tool, sparkKey: 'openMaintenance', color: '#FF5A5F' },
+        { key: 'activeVehicles', label: 'Active Vehicles', icon: Icons.truck, sparkKey: 'activeVehicles', color: '#00A877' },
+        { key: 'availableVehicles', label: 'Available Vehicles', icon: Icons.check, sparkKey: 'fuelEfficiency', color: '#22C55E' },
+        { key: 'openMaintenance', label: 'In Maintenance', icon: Icons.tool, sparkKey: 'openMaintenance', color: '#FF5A5F' },
+        { key: 'activeTrips', label: 'Active Trips', icon: Icons.trips, sparkKey: 'onTimeDelivery', color: '#8B7CF7' },
+        { key: 'pendingTrips', label: 'Pending Trips', icon: Icons.clock, sparkKey: 'avgTripCost', color: '#F5A623' },
+        { key: 'driversOnDuty', label: 'Drivers On Duty', icon: Icons.user, sparkKey: 'activeVehicles', color: '#2DD4BF' },
+        { key: 'fleetUtilization', label: 'Fleet Utilization', icon: Icons.target, sparkKey: 'fleetUtilization', color: '#00A877' }
       ];
 
       const grid = document.getElementById('kpiGrid');
@@ -211,15 +213,17 @@
     // ── Render Map Pins ──
     function renderMapPins() {
       const canvas = document.getElementById('mapCanvas');
-      MockData.vehicles.forEach((v, i) => {
+      canvas.querySelectorAll('.vehicle-pin').forEach(pin => pin.remove());
+      const list = DB.getVehicles();
+      list.forEach((v, i) => {
         const pin = document.createElement('div');
-        pin.className = `vehicle-pin ${v.status}`;
+        pin.className = `vehicle-pin ${v.status === 'On Trip' ? 'moving' : (v.status === 'In Shop' ? 'alert' : 'idle')}`;
         // Distribute pins across the map canvas
         const x = 15 + (i % 4) * 22 + Math.random() * 8;
         const y = 10 + Math.floor(i / 4) * 28 + Math.random() * 10;
         pin.style.left = `${x}%`;
         pin.style.top = `${y}%`;
-        pin.title = `${v.plate} — ${v.driver} (${v.status})`;
+        pin.title = `${v.plate} — ${v.name} (${v.status})`;
         canvas.appendChild(pin);
       });
     }
@@ -228,7 +232,7 @@
     // ── Render Sector Breakdown ──
     function renderSectors() {
       const container = document.getElementById('sectorBreakdown');
-      const colors = ['#6C5CE7', '#8B7CF7', '#2DD4BF', '#F5A623', '#22C55E'];
+      const colors = ['#00A877', '#2DD4BF', '#F5A623', '#22C55E', '#8B7CF7'];
       container.innerHTML = MockData.sectors.map((s, i) => `
         <div class="sector-item">
           <span class="sector-name">${s.name}</span>
@@ -244,7 +248,7 @@
     // ── Route Efficiency Gauge ──
     function renderGauge() {
       const el = document.getElementById('efficiencyGauge');
-      Charts.radialProgress(el, 91.2, { size: 120, strokeWidth: 10, color: '#2DD4BF', fontSize: 22 });
+      Charts.radialProgress(el, 91.2, { size: 120, strokeWidth: 10, color: '#00A877', fontSize: 22 });
     }
     renderGauge();
 
@@ -269,7 +273,7 @@
       const container = document.getElementById('revenueCostChart');
       const labels = MockData.revenueTrend.map(d => d.month);
       Charts.areaChart(container, [
-        { label: 'Revenue', data: MockData.revenueTrend.map(d => d.revenue), color: '#6C5CE7' },
+        { label: 'Revenue', data: MockData.revenueTrend.map(d => d.revenue), color: '#00A877' },
         { label: 'Cost', data: MockData.revenueTrend.map(d => d.cost), color: '#2DD4BF' }
       ], labels, { width: 720, height: 260 });
     }
@@ -287,13 +291,14 @@
     // ── Recent Trips Table ──
     function renderTripsTable() {
       const tbody = document.getElementById('recentTripsBody');
-      tbody.innerHTML = MockData.trips.slice(0, 7).map(t => `
+      const trips = DB.getTrips();
+      tbody.innerHTML = trips.slice(0, 7).map(t => `
         <tr>
           <td><span class="font-semibold" style="color:var(--text-accent)">${t.id}</span></td>
           <td>${t.route}</td>
           <td>
             <div class="driver-cell">
-              <div class="avatar avatar-sm">${t.driverAvatar}</div>
+              <div class="avatar avatar-sm">${t.driver.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}</div>
               <span>${t.driver}</span>
             </div>
           </td>

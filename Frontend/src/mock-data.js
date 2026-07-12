@@ -14,14 +14,15 @@ const MockData = {
     regions: ['North America', 'Europe', 'Asia Pacific']
   },
 
-  // ── KPI Data ──
+  // ── KPI Data (Section 3.2 Specification) ──
   kpis: {
     activeVehicles: { value: 842, total: 1000, delta: 3.2, trend: 'up', unit: '' },
-    onTimeDelivery: { value: 94.7, delta: 1.8, trend: 'up', unit: '%' },
-    fuelEfficiency: { value: 8.4, delta: -2.1, trend: 'down', unit: 'km/L' },
-    fleetUtilization: { value: 87.3, delta: 4.5, trend: 'up', unit: '%' },
-    avgTripCost: { value: 284, delta: -1.3, trend: 'down', unit: '$' },
-    openMaintenance: { value: 23, delta: 12, trend: 'up', unit: 'tickets' }
+    availableVehicles: { value: 140, delta: 1.2, trend: 'up', unit: '' },
+    openMaintenance: { value: 18, delta: -2, trend: 'down', unit: 'units' },
+    activeTrips: { value: 127, delta: 5.4, trend: 'up', unit: '' },
+    pendingTrips: { value: 45, delta: -8, trend: 'down', unit: '' },
+    driversOnDuty: { value: 680, delta: 2.1, trend: 'up', unit: '' },
+    fleetUtilization: { value: 84.2, delta: 4.5, trend: 'up', unit: '%' }
   },
 
   // ── Revenue/Cost Trend (12 months) ──

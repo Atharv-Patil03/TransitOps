@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="TransitOps Vehicles Registry — Maintain master list of vehicles and equipment lifecycle.">
+  <title>Vehicles Registry — TransitOps</title>
+  <link rel="stylesheet" href="src/design-tokens.css">
+  <link rel="stylesheet" href="src/styles.css">
+  <style>
+    /* Modal drawer styling matching core design system */
+    .drawer-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg-overlay);
+      backdrop-filter: blur(12px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--duration-medium) var(--ease-out);
+    }
+    .drawer-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .drawer-card {
+      width: 460px;
+      max-width: 90%;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-secondary);
+      border-radius: var(--radius-2xl);
+      padding: var(--space-6);
+      box-shadow: var(--glass-shadow-lg);
+      transform: scale(0.95) translateY(10px);
+      transition: transform var(--duration-medium) var(--ease-spring);
+    }
+    .drawer-overlay.active .drawer-card {
+      transform: scale(1) translateY(0);
+    }
+    .drawer-title {
+      font-size: var(--text-xl);
+      font-weight: 800;
+      color: var(--text-primary);
+      letter-spacing: var(--tracking-tight);
+      margin-bottom: var(--space-4);
+    }
+    .form-group {
+      margin-bottom: var(--space-4);
+    }
+    .form-group label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: var(--space-2);
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-4);
+    }
+    .select-field {
+      width: 100%;
+      padding: var(--space-2) var(--space-4);
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: var(--radius-lg);
+      font-size: var(--text-caption);
+      color: var(--text-primary);
+      outline: none;
+      transition: all var(--duration-normal) var(--ease-out);
+    }
+    .select-field:focus {
+      border-color: var(--input-focus-border);
+      box-shadow: var(--focus-ring);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside id="sidebar"></aside>
+    <div class="main-wrapper">
+      <header id="header" class="header"></header>
+      <main class="main-content">
+        
+        <!-- Header -->
+        <div class="page-header">
+          <div class="page-header-info">
+            <h1>Vehicle Registry</h1>
+            <p>Maintain your master list of vehicles and asset configurations</p>
+          </div>
+          <div class="page-header-actions">
+            <div class="input-field" style="min-width: 220px">
+              <span style="color: var(--text-tertiary)"><span data-icon="search"></span></span>
+              <input type="text" placeholder="Search vehicles, plates..." id="vehicleSearch" />
+            </div>
+            <button class="btn-primary" onclick="openAddModal()"><span data-icon="plus"></span> Add Vehicle</button>
+          </div>
+        </div>
+
+        <!-- KPI Summary Cards -->
+        <div class="kpi-grid mb-6">
+          <div class="kpi-card">
+            <div class="kpi-card-label">Total Fleet Size</div>
+            <div class="kpi-card-value" id="kpiTotal">0</div>
+            <div class="kpi-card-footer">
+              <span class="text-xs text-tertiary">registered assets</span>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-card-label">Available Now</div>
+            <div class="kpi-card-value" id="kpiAvailable">0</div>
+            <div class="kpi-card-footer">
+              <span class="status-pill success">Ready</span>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-card-label">In Maintenance</div>
+            <div class="kpi-card-value" id="kpiInShop">0</div>
+            <div class="kpi-card-footer">
+              <span class="status-pill warning">In Shop</span>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-card-label">On Dispatch Route</div>
+            <div class="kpi-card-value" id="kpiOnTrip">0</div>
+            <div class="kpi-card-footer">
+              <span class="status-pill moving">Active</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Vehicles Grid Panel -->
+        <div class="glass-panel">
+          <div class="table-toolbar">
+            <div class="table-toolbar-left">
+              <div class="segmented-control" id="statusFilter">
+                <button class="segment-btn active" data-filter="all">All Status</button>
+                <button class="segment-btn" data-filter="Available">Available</button>
+                <button class="segment-btn" data-filter="On Trip">On Trip</button>
+                <button class="segment-btn" data-filter="In Shop">In Shop</button>
+                <button class="segment-btn" data-filter="Retired">Retired</button>
+              </div>
+            </div>
+            <div class="table-toolbar-right">
+              <select class="select-field" style="max-width: 180px; padding: 6px 12px;" id="typeFilter" onchange="filterVehicles()">
+                <option value="all">All Types</option>
+                <option value="Heavy Truck">Heavy Trucks</option>
+                <option value="Light Truck">Light Trucks</option>
+                <option value="Van">Vans</option>
+                <option value="Electric">Electric</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="data-table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Vehicle ID</th>
+                  <th>Plate Number</th>
+                  <th>Vehicle Model</th>
+                  <th>Classification</th>
+                  <th>Max Load Cap.</th>
+                  <th>Current Odometer</th>
+                  <th>Acquisition Cost</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="vehiclesTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Add Vehicle Modal Drawer -->
+  <div class="drawer-overlay" id="addModalOverlay" onclick="closeModalOnOverlay(event)">
+    <div class="drawer-card">
+      <div class="flex items-center justify-between" style="margin-bottom: var(--space-4)">
+        <div class="drawer-title">Register Vehicle</div>
+        <button class="row-action" style="padding: 6px" onclick="closeAddModal()"><span data-icon="x"></span></button>
+      </div>
+
+      <div class="form-group">
+        <label>Plate / Registration Number (Unique)</label>
+        <div class="input-field">
+          <input type="text" placeholder="e.g. TRK-8890" id="formPlate" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Vehicle Model / Name</label>
+        <div class="input-field">
+          <input type="text" placeholder="e.g. Scania R500" id="formModel" required>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Classification Type</label>
+          <select class="select-field" id="formType">
+            <option value="Heavy Truck">Heavy Truck</option>
+            <option value="Light Truck">Light Truck</option>
+            <option value="Van">Van</option>
+            <option value="Electric">Electric</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Max Load Capacity (kg)</label>
+          <div class="input-field">
+            <input type="number" placeholder="20000" id="formCapacity" min="0" required>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Acquisition Cost ($)</label>
+          <div class="input-field">
+            <input type="number" placeholder="125000" id="formCost" min="0" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Starting Odometer (km)</label>
+          <div class="input-field">
+            <input type="number" placeholder="42000" id="formOdometer" min="0" required>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-primary w-full" style="padding: 12px; justify-content: center; font-size: var(--text-md); margin-top: var(--space-4)" onclick="submitVehicle()">
+        Register Asset
+      </button>
+    </div>
+  </div>
+
+  <script src="src/icons.js"></script>
+  <script src="src/mock-data.js"></script>
+  <script src="src/charts.js"></script>
+  <script src="src/db.js"></script>
+  <script src="src/app.js"></script>
+  <script>
+    initApp('Vehicles', ['TransitOps', 'Vehicles']);
+
+    let activeFilter = 'all';
+
+    function renderVehicles() {
+      const tbody = document.getElementById('vehiclesTableBody');
+      const list = DB.getVehicles();
+      const type = document.getElementById('typeFilter').value;
+
+      // Filter local list
+      let filtered = list;
+      if (activeFilter !== 'all') {
+        filtered = filtered.filter(v => v.status === activeFilter);
+      }
+      if (type !== 'all') {
+        filtered = filtered.filter(v => v.type === type);
+      }
+
+      // Render
+      tbody.innerHTML = filtered.map(v => `
+        <tr>
+          <td><span class="font-semibold" style="color: var(--text-accent)">${v.id}</span></td>
+          <td class="font-semibold tabular-nums">${v.plate}</td>
+          <td>${v.name}</td>
+          <td>${v.type}</td>
+          <td class="tabular-nums">${v.capacity.toLocaleString()} kg</td>
+          <td class="tabular-nums">${v.odometer.toLocaleString()} km</td>
+          <td class="tabular-nums font-semibold">$${v.cost.toLocaleString()}</td>
+          <td>${statusPill(v.status)}</td>
+          <td>
+            <button class="row-action" onclick="removeVehicle('${v.plate}')" title="Retire Vehicle">${Icons.x}</button>
+          </td>
+        </tr>
+      `).join('');
+
+      // Update KPI totals
+      document.getElementById('kpiTotal').innerText = list.length;
+      document.getElementById('kpiAvailable').innerText = list.filter(v => v.status === 'Available').length;
+      document.getElementById('kpiInShop').innerText = list.filter(v => v.status === 'In Shop').length;
+      document.getElementById('kpiOnTrip').innerText = list.filter(v => v.status === 'On Trip').length;
+    }
+
+    function removeVehicle(plate) {
+      const list = DB.getVehicles();
+      const filtered = list.filter(v => v.plate !== plate);
+      DB.saveVehicles(filtered);
+      showToast('info', 'Vehicle Removed', `Asset registration ${plate} retired.`);
+      renderVehicles();
+    }
+
+    function openAddModal() {
+      document.getElementById('addModalOverlay').classList.add('active');
+    }
+
+    function closeAddModal() {
+      document.getElementById('addModalOverlay').classList.remove('active');
+    }
+
+    function closeModalOnOverlay(e) {
+      if (e.target.id === 'addModalOverlay') {
+        closeAddModal();
+      }
+    }
+
+    function submitVehicle() {
+      const plate = document.getElementById('formPlate').value.trim();
+      const model = document.getElementById('formModel').value.trim();
+      const type = document.getElementById('formType').value;
+      const capacity = parseInt(document.getElementById('formCapacity').value);
+      const cost = parseInt(document.getElementById('formCost').value);
+      const odometer = parseInt(document.getElementById('formOdometer').value);
+
+      if (!plate || !model || isNaN(capacity) || isNaN(cost) || isNaN(odometer)) {
+        showToast('error', 'Fields Empty', 'Please provide valid configurations for all vehicle inputs.');
+        return;
+      }
+
+      const id = 'VH-' + String(DB.getVehicles().length + 1).padStart(3, '0');
+
+      try {
+        DB.addVehicle({ id, plate, name: model, type, capacity, odometer, cost, status: 'Available' });
+        showToast('success', 'Asset Registered', `Vehicle ${model} (${plate}) successfully registered.`);
+        closeAddModal();
+        renderVehicles();
+        // Clear fields
+        document.getElementById('formPlate').value = '';
+        document.getElementById('formModel').value = '';
+        document.getElementById('formCapacity').value = '';
+        document.getElementById('formCost').value = '';
+        document.getElementById('formOdometer').value = '';
+      } catch (err) {
+        showToast('error', 'Registration Failed', err.message);
+      }
+    }
+
+    function filterVehicles() {
+      renderVehicles();
+    }
+
+    // Segmented Status clicks
+    document.getElementById('statusFilter').querySelectorAll('.segment-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#statusFilter .segment-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeFilter = btn.dataset.filter;
+        renderVehicles();
+      });
+    });
+
+    // Search bar
+    document.getElementById('vehicleSearch').addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase();
+      const rows = document.querySelectorAll('#vehiclesTableBody tr');
+      rows.forEach(r => {
+        r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none';
+      });
+    });
+
+    // Initial render
+    renderVehicles();
+  </script>
+</body>
+</html>

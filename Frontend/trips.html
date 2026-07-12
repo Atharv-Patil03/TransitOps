@@ -20,39 +20,39 @@
             <p>Manage and monitor all transport operations</p>
           </div>
           <div class="page-header-actions">
-            <button class="btn-secondary"><span data-icon="download"></span> Export</button>
-            <button class="btn-primary"><span data-icon="plus"></span> New Trip</button>
+            <button class="btn-secondary" onclick="exportCSV()"><span data-icon="download"></span> Export CSV</button>
+            <button class="btn-primary" onclick="openAddTripModal()"><span data-icon="plus"></span> New Trip</button>
           </div>
         </div>
 
         <!-- KPI Summary -->
         <div class="kpi-grid mb-6">
           <div class="kpi-card">
-            <div class="kpi-card-label">Total Trips</div>
-            <div class="kpi-card-value">18,942</div>
+            <div class="kpi-card-label">Total Dispatched</div>
+            <div class="kpi-card-value" id="kpiTotalTrips">0</div>
             <div class="kpi-card-footer">
-              <span class="kpi-card-delta up"><span data-icon="trendUp"></span> +5.2%</span>
+              <span class="text-xs text-tertiary">dispatched routes</span>
             </div>
           </div>
           <div class="kpi-card">
             <div class="kpi-card-label">Active Trips</div>
-            <div class="kpi-card-value">127</div>
+            <div class="kpi-card-value" id="kpiActiveTrips">0</div>
             <div class="kpi-card-footer">
               <span class="status-pill in-transit">In Transit</span>
             </div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-card-label">Avg. Distance</div>
-            <div class="kpi-card-value">186<span class="kpi-card-unit">mi</span></div>
+            <div class="kpi-card-label">Delivered</div>
+            <div class="kpi-card-value" id="kpiDeliveredTrips">0</div>
             <div class="kpi-card-footer">
-              <span class="kpi-card-delta down"><span data-icon="trendDown"></span> -1.4%</span>
+              <span class="status-pill success">Delivered</span>
             </div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-card-label">On-Time Rate</div>
-            <div class="kpi-card-value">94.7<span class="kpi-card-unit">%</span></div>
+            <div class="kpi-card-label">Delayed</div>
+            <div class="kpi-card-value" id="kpiDelayedTrips">0</div>
             <div class="kpi-card-footer">
-              <span class="kpi-card-delta up"><span data-icon="trendUp"></span> +1.8%</span>
+              <span class="status-pill warning">Delayed</span>
             </div>
           </div>
         </div>
@@ -74,20 +74,14 @@
                 <span style="color:var(--text-tertiary)"><span data-icon="search"></span></span>
                 <input type="text" placeholder="Search trips..." id="tripSearch" />
               </div>
-              <div class="date-picker">
-                <span data-icon="calendar"></span>
-                <span>Jul 1 – Jul 12, 2026</span>
-              </div>
-              <button class="btn-ghost"><span data-icon="filter"></span> Filter</button>
             </div>
           </div>
           <div class="data-table-wrapper">
             <table class="data-table">
               <thead>
                 <tr>
-                  <th><div class="checkbox" onclick="this.classList.toggle('checked')"></div></th>
-                  <th>Trip ID <span class="sort-arrow"><span data-icon="chevronDown"></span></span></th>
-                  <th>Route <span class="sort-arrow"><span data-icon="chevronDown"></span></span></th>
+                  <th>Trip ID</th>
+                  <th>Route</th>
                   <th>Driver</th>
                   <th>Vehicle</th>
                   <th>Status</th>
@@ -96,50 +90,105 @@
                   <th>Cost</th>
                   <th>Rating</th>
                   <th>Date</th>
-                  <th></th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="tripsTableBody"></tbody>
             </table>
-          </div>
-          <div class="pagination" id="tripsPagination">
-            <button class="page-btn"><span data-icon="chevronLeft"></span></button>
-            <button class="page-btn active">1</button>
-            <button class="page-btn">2</button>
-            <button class="page-btn">3</button>
-            <button class="page-btn">...</button>
-            <button class="page-btn">12</button>
-            <button class="page-btn"><span data-icon="chevronRight"></span></button>
           </div>
         </div>
       </main>
     </div>
   </div>
 
+  <!-- Add Trip Modal Drawer -->
+  <div class="drawer-overlay" id="addTripOverlay" onclick="closeTripModalOnOverlay(event)">
+    <div class="drawer-card">
+      <div class="flex items-center justify-between" style="margin-bottom: var(--space-4)">
+        <div class="drawer-title">Dispatch New Trip</div>
+        <button class="row-action" style="padding: 6px" onclick="closeAddTripModal()"><span data-icon="x"></span></button>
+      </div>
+
+      <div class="form-group">
+        <label>Route Description</label>
+        <div class="input-field">
+          <input type="text" placeholder="e.g. Chicago → Detroit" id="tripRoute" required>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Assign Vehicle</label>
+          <select class="select-field" id="tripVehicleSelect"></select>
+        </div>
+        <div class="form-group">
+          <label>Assign Driver</label>
+          <select class="select-field" id="tripDriverSelect"></select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Cargo Weight (kg)</label>
+          <div class="input-field">
+            <input type="number" placeholder="e.g. 500" id="tripWeight" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Planned Distance (miles)</label>
+          <div class="input-field">
+            <input type="number" placeholder="e.g. 215" id="tripDistance" required>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Est. Cost ($)</label>
+          <div class="input-field">
+            <input type="number" placeholder="e.g. 350" id="tripCost" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Est. Duration</label>
+          <div class="input-field">
+            <input type="text" placeholder="e.g. 4h 15m" id="tripDuration" required>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-primary w-full" style="padding: 12px; justify-content: center; font-size: var(--text-md); margin-top: var(--space-4)" onclick="submitTrip()">
+        Dispatch Route
+      </button>
+    </div>
+  </div>
+
   <script src="src/icons.js"></script>
   <script src="src/mock-data.js"></script>
   <script src="src/charts.js"></script>
+  <script src="src/db.js"></script>
   <script src="src/app.js"></script>
   <script>
     initApp('Trips', ['TransitOps', 'Trips']);
 
     let currentFilter = 'all';
 
-    function renderTrips(filter) {
+    function renderTrips() {
+      const list = DB.getTrips();
       const tbody = document.getElementById('tripsTableBody');
-      let trips = MockData.trips;
-      if (filter && filter !== 'all') {
-        trips = trips.filter(t => t.status === filter);
+
+      let filtered = list;
+      if (currentFilter !== 'all') {
+        filtered = filtered.filter(t => t.status === currentFilter);
       }
 
-      tbody.innerHTML = trips.map(t => `
+      tbody.innerHTML = filtered.map(t => `
         <tr>
-          <td><div class="checkbox" onclick="this.classList.toggle('checked')"></div></td>
           <td><span class="font-semibold" style="color:var(--text-accent)">${t.id}</span></td>
           <td>${t.route}</td>
           <td>
             <div class="driver-cell">
-              <div class="avatar avatar-sm">${t.driverAvatar}</div>
+              <div class="avatar avatar-sm">${t.driver.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}</div>
               <span>${t.driver}</span>
             </div>
           </td>
@@ -150,12 +199,150 @@
           <td class="tabular-nums font-semibold">${t.cost}</td>
           <td>${t.rating > 0 ? renderStars(t.rating) : '<span class="text-muted">—</span>'}</td>
           <td class="text-secondary">${t.date}</td>
-          <td><button class="row-action">${Icons.moreHorizontal}</button></td>
+          <td>
+            <div class="flex items-center gap-2">
+              ${t.status === 'in-transit' ? `
+                <button class="row-action" onclick="completeTrip('${t.id}')" title="Complete Trip" style="color: var(--emerald-500)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></button>
+                <button class="row-action" onclick="cancelTrip('${t.id}')" title="Cancel Trip" style="color: var(--coral-500)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+              ` : ''}
+            </div>
+          </td>
         </tr>
       `).join('');
+
+      // Update KPIs
+      document.getElementById('kpiTotalTrips').innerText = list.length;
+      document.getElementById('kpiActiveTrips').innerText = list.filter(t => t.status === 'in-transit').length;
+      document.getElementById('kpiDeliveredTrips').innerText = list.filter(t => t.status === 'delivered').length;
+      document.getElementById('kpiDelayedTrips').innerText = list.filter(t => t.status === 'delayed').length;
     }
 
-    renderTrips('all');
+    function populateSelects() {
+      const vSelect = document.getElementById('tripVehicleSelect');
+      const dSelect = document.getElementById('tripDriverSelect');
+
+      const vehicles = DB.getVehicles().filter(v => v.status === 'Available');
+      const drivers = DB.getDrivers().filter(d => d.status === 'Available');
+
+      vSelect.innerHTML = vehicles.map(v => `<option value="${v.plate}">${v.name} (${v.plate}) [Cap: ${v.capacity}kg]</option>`).join('');
+      dSelect.innerHTML = drivers.map(d => `<option value="${d.name}">${d.name} (${d.license})</option>`).join('');
+    }
+
+    function openAddTripOverlay() {
+      populateSelects();
+      document.getElementById('addTripOverlay').classList.add('active');
+    }
+
+    function openAddTripModal() {
+      openAddTripOverlay();
+    }
+
+    function closeAddTripModal() {
+      document.getElementById('addTripOverlay').classList.remove('active');
+    }
+
+    function closeTripModalOnOverlay(e) {
+      if (e.target.id === 'addTripOverlay') {
+        closeAddTripModal();
+      }
+    }
+
+    function submitTrip() {
+      const route = document.getElementById('tripRoute').value.trim();
+      const vehicle = document.getElementById('tripVehicleSelect').value;
+      const driver = document.getElementById('tripDriverSelect').value;
+      const weight = parseInt(document.getElementById('tripWeight').value);
+      const distance = parseInt(document.getElementById('tripDistance').value);
+      const cost = parseInt(document.getElementById('tripCost').value);
+      const duration = document.getElementById('tripDuration').value.trim();
+
+      if (!route || !vehicle || !driver || isNaN(weight) || isNaN(distance) || isNaN(cost) || !duration) {
+        showToast('error', 'Fields Empty', 'Please provide valid values for all dispatch configuration inputs.');
+        return;
+      }
+
+      const id = 'TRP-' + String(DB.getTrips().length + 78433);
+
+      try {
+        DB.addTrip({
+          id,
+          route,
+          driver,
+          vehicle,
+          status: 'in-transit',
+          distance: distance + ' mi',
+          duration,
+          cost: '$' + cost,
+          rating: 0,
+          date: new Date().toISOString().split('T')[0],
+          weight
+        });
+
+        showToast('success', 'Route Dispatched', `Route ${route} successfully assigned to ${driver}.`);
+        closeAddTripModal();
+        renderTrips();
+
+        // Clear values
+        document.getElementById('tripRoute').value = '';
+        document.getElementById('tripWeight').value = '';
+        document.getElementById('tripDistance').value = '';
+        document.getElementById('tripCost').value = '';
+        document.getElementById('tripDuration').value = '';
+      } catch (err) {
+        showToast('error', 'Validation Failure', err.message);
+      }
+    }
+
+    // Rule 6: Completing a trip automatically changes both the vehicle and driver status back to Available
+    function completeTrip(id) {
+      const list = DB.getTrips();
+      const index = list.findIndex(t => t.id === id);
+      if (index !== -1) {
+        list[index].status = 'delivered';
+        list[index].rating = 5; // default high rating
+        DB.saveTrips(list);
+        
+        // Restore Vehicle & Driver status
+        DB.updateVehicleStatus(list[index].vehicle, 'Available');
+        DB.updateDriverStatus(list[index].driver, 'Available', '—');
+
+        showToast('success', 'Trip Completed', `Trip ${id} successfully delivered.`);
+        renderTrips();
+      }
+    }
+
+    // Rule 7: Cancelling a dispatched trip restores the vehicle and driver to Available
+    function cancelTrip(id) {
+      const list = DB.getTrips();
+      const index = list.findIndex(t => t.id === id);
+      if (index !== -1) {
+        list[index].status = 'cancelled';
+        DB.saveTrips(list);
+
+        // Restore Vehicle & Driver status
+        DB.updateVehicleStatus(list[index].vehicle, 'Available');
+        DB.updateDriverStatus(list[index].driver, 'Available', '—');
+
+        showToast('info', 'Trip Cancelled', `Trip ${id} has been cancelled.`);
+        renderTrips();
+      }
+    }
+
+    // Support CSV Export
+    function exportCSV() {
+      const list = DB.getTrips();
+      let csv = 'Trip ID,Route,Driver,Vehicle,Status,Distance,Duration,Cost,Date\n';
+      list.forEach(t => {
+        csv += `${t.id},"${t.route}","${t.driver}",${t.vehicle},${t.status},${t.distance},${t.duration},${t.cost},${t.date}\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.setAttribute('href', url);
+      a.setAttribute('download', 'TransitOps_Trips_Export.csv');
+      a.click();
+      showToast('success', 'Export Completed', 'Trips ledger exported to CSV file.');
+    }
 
     // Status filter
     document.getElementById('statusFilter').querySelectorAll('.segment-btn').forEach(btn => {
@@ -163,7 +350,7 @@
         document.querySelectorAll('#statusFilter .segment-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentFilter = btn.dataset.filter;
-        renderTrips(currentFilter);
+        renderTrips();
       });
     });
 
@@ -176,15 +363,8 @@
       });
     });
 
-    // Pagination clicks
-    document.querySelectorAll('.pagination .page-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.pagination .page-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-      });
-    });
-    // ── Trigger metric animations ──
-    animateMetrics();
+    // Initial render
+    renderTrips();
   </script>
 </body>
 </html>

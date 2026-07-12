@@ -67,7 +67,7 @@
               <span style="color:var(--text-tertiary)"><span data-icon="search"></span></span>
               <input type="text" placeholder="Search drivers..." id="driverSearch" />
             </div>
-            <button class="btn-primary"><span data-icon="plus"></span> Add Driver</button>
+            <button class="btn-primary" onclick="openAddDriverModal()"><span data-icon="plus"></span> Add Driver</button>
           </div>
         </div>
 
@@ -75,31 +75,30 @@
         <div class="kpi-grid mb-6">
           <div class="kpi-card">
             <div class="kpi-card-label">Total Drivers</div>
-            <div class="kpi-card-value">956</div>
+            <div class="kpi-card-value" id="kpiTotalDrivers">0</div>
             <div class="kpi-card-footer">
-              <span class="kpi-card-delta up"><span data-icon="trendUp"></span> +12</span>
-              <span class="text-xs text-tertiary">this month</span>
+              <span class="text-xs text-tertiary">registered personnel</span>
             </div>
           </div>
           <div class="kpi-card">
             <div class="kpi-card-label">Active Now</div>
-            <div class="kpi-card-value">712</div>
+            <div class="kpi-card-value" id="kpiActiveDrivers">0</div>
             <div class="kpi-card-footer">
               <span class="status-pill active">On Duty</span>
             </div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-card-label">Avg. Rating</div>
-            <div class="kpi-card-value">4.7</div>
+            <div class="kpi-card-label">Suspended</div>
+            <div class="kpi-card-value" id="kpiSuspendedDrivers">0</div>
             <div class="kpi-card-footer">
-              <span class="star-rating" style="color:var(--amber-400)"><span data-icon="star"></span><span data-icon="star"></span><span data-icon="star"></span><span data-icon="star"></span><span data-icon="star"></span></span>
+              <span class="status-pill alert">Suspended</span>
             </div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-card-label">Avg. On-Time</div>
-            <div class="kpi-card-value">95.1<span class="kpi-card-unit">%</span></div>
+            <div class="kpi-card-label">Available</div>
+            <div class="kpi-card-value" id="kpiAvailableDrivers">0</div>
             <div class="kpi-card-footer">
-              <span class="kpi-card-delta up"><span data-icon="trendUp"></span> +1.3%</span>
+              <span class="status-pill success">Ready</span>
             </div>
           </div>
         </div>
@@ -122,9 +121,9 @@
                     <th>Trips</th>
                     <th>On-Time</th>
                     <th>License</th>
+                    <th>Expiry Date</th>
                     <th>Vehicle</th>
                     <th>Region</th>
-                    <th>Joined</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -137,84 +136,233 @@
     </div>
   </div>
 
+  <!-- Add Driver Modal Drawer -->
+  <div class="drawer-overlay" id="addDriverOverlay" onclick="closeDriverModalOnOverlay(event)">
+    <div class="drawer-card">
+      <div class="flex items-center justify-between" style="margin-bottom: var(--space-4)">
+        <div class="drawer-title">Add Driver Profile</div>
+        <button class="row-action" style="padding: 6px" onclick="closeAddDriverModal()"><span data-icon="x"></span></button>
+      </div>
+
+      <div class="form-group">
+        <label>Driver Full Name</label>
+        <div class="input-field">
+          <input type="text" placeholder="e.g. Liam Neeson" id="drvName" required>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>License Number</label>
+          <div class="input-field">
+            <input type="text" placeholder="CDL-19283" id="drvLicense" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Contact Number</label>
+          <div class="input-field">
+            <input type="tel" placeholder="+1 (555) 000-0000" id="drvPhone" required>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>License Category</label>
+          <select class="select-field" id="drvClass">
+            <option value="CDL-A">CDL-Class A</option>
+            <option value="CDL-B">CDL-Class B</option>
+            <option value="Class C">Class C Standard</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>License Expiry Date</label>
+          <div class="input-field">
+            <input type="date" id="drvExpiry" required>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Starting Safety Score</label>
+          <div class="input-field">
+            <input type="number" placeholder="5.0" id="drvScore" min="1" max="5" step="0.1" value="5.0" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Region Assignment</label>
+          <select class="select-field" id="drvRegion">
+            <option value="Northeast">Northeast</option>
+            <option value="Southeast">Southeast</option>
+            <option value="Midwest">Midwest</option>
+            <option value="Southwest">Southwest</option>
+            <option value="West Coast">West Coast</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn-primary w-full" style="padding: 12px; justify-content: center; font-size: var(--text-md); margin-top: var(--space-4)" onclick="submitDriver()">
+        Add Personnel
+      </button>
+    </div>
+  </div>
+
   <script src="src/icons.js"></script>
   <script src="src/mock-data.js"></script>
   <script src="src/charts.js"></script>
+  <script src="src/db.js"></script>
   <script src="src/app.js"></script>
   <script>
     initApp('Drivers', ['TransitOps', 'Drivers']);
 
-    // Avatar colors by initial
     const avatarColors = [
-      'linear-gradient(135deg, #6C5CE7, #8B7CF7)',
+      'linear-gradient(135deg, #00A877, #10B981)',
       'linear-gradient(135deg, #2DD4BF, #22C55E)',
       'linear-gradient(135deg, #F5A623, #FF5A5F)',
       'linear-gradient(135deg, #8B7CF7, #2DD4BF)',
       'linear-gradient(135deg, #FF5A5F, #F5A623)',
     ];
 
-    function renderDriverCards() {
+    function renderDrivers() {
+      const list = DB.getDrivers();
+      
+      // Render Grid Cards
       const grid = document.getElementById('driversGrid');
-      grid.innerHTML = MockData.drivers.map((d, i) => `
-        <div class="driver-card" onclick="showToast('info', '${d.name}', 'Phone: ${d.phone} | License: ${d.license}')">
-          <div class="avatar avatar-xl" style="background:${avatarColors[i % avatarColors.length]}">${d.avatar}</div>
-          <div class="driver-card-name">${d.name}</div>
-          ${statusPill(d.status)}
-          <div class="driver-card-rating" style="margin-top:12px">
-            <span class="driver-card-rating-value">${d.rating}</span>
-            ${renderStars(Math.round(d.rating))}
-          </div>
-          <div class="driver-card-stats">
-            <div>
-              <div class="driver-card-stat-value">${d.trips.toLocaleString()}</div>
-              <div class="driver-card-stat-label">Trips</div>
-            </div>
-            <div>
-              <div class="driver-card-stat-value">${d.onTime}%</div>
-              <div class="driver-card-stat-label">On-Time</div>
-            </div>
-            <div>
-              <div class="driver-card-stat-value">${d.vehicle}</div>
-              <div class="driver-card-stat-label">Vehicle</div>
-            </div>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    function renderDriverTable() {
-      const tbody = document.getElementById('driversTableBody');
-      tbody.innerHTML = MockData.drivers.map((d, i) => `
-        <tr>
-          <td>
-            <div class="driver-cell">
-              <div class="avatar avatar-sm" style="background:${avatarColors[i % avatarColors.length]}">${d.avatar}</div>
-              <div>
-                <div class="font-semibold">${d.name}</div>
-                <div class="text-xs text-tertiary">${d.id}</div>
-              </div>
-            </div>
-          </td>
-          <td>${statusPill(d.status)}</td>
-          <td>
-            <div class="flex items-center gap-2">
-              <span class="font-semibold" style="color:var(--amber-400)">${d.rating}</span>
+      grid.innerHTML = list.map((d, i) => {
+        const initials = d.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+        return `
+          <div class="driver-card" onclick="showToast('info', '${d.name}', 'Phone: ${d.phone} | License: ${d.license}')">
+            <div class="avatar avatar-xl" style="background:${avatarColors[i % avatarColors.length]}">${initials}</div>
+            <div class="driver-card-name">${d.name}</div>
+            ${statusPill(d.status)}
+            <div class="driver-card-rating" style="margin-top:12px">
+              <span class="driver-card-rating-value">${d.rating}</span>
               ${renderStars(Math.round(d.rating))}
             </div>
-          </td>
-          <td class="tabular-nums">${d.trips.toLocaleString()}</td>
-          <td class="tabular-nums font-semibold">${d.onTime}%</td>
-          <td>${d.license}</td>
-          <td class="tabular-nums">${d.vehicle}</td>
-          <td>${d.region}</td>
-          <td class="text-secondary">${d.joined}</td>
-          <td><button class="row-action">${Icons.moreHorizontal}</button></td>
-        </tr>
-      `).join('');
+            <div class="driver-card-stats">
+              <div>
+                <div class="driver-card-stat-value">${d.trips}</div>
+                <div class="driver-card-stat-label">Trips</div>
+              </div>
+              <div>
+                <div class="driver-card-stat-value">${d.onTime}%</div>
+                <div class="driver-card-stat-label">On-Time</div>
+              </div>
+              <div>
+                <div class="driver-card-stat-value" style="font-size:11px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden">${d.vehicle}</div>
+                <div class="driver-card-stat-label">Vehicle</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Render Table Rows
+      const tbody = document.getElementById('driversTableBody');
+      tbody.innerHTML = list.map((d, i) => {
+        const initials = d.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+        return `
+          <tr>
+            <td>
+              <div class="driver-cell">
+                <div class="avatar avatar-sm" style="background:${avatarColors[i % avatarColors.length]}">${initials}</div>
+                <div>
+                  <div class="font-semibold">${d.name}</div>
+                  <div class="text-xs text-tertiary">${d.id}</div>
+                </div>
+              </div>
+            </td>
+            <td>${statusPill(d.status)}</td>
+            <td>
+              <div class="flex items-center gap-2">
+                <span class="font-semibold" style="color:var(--amber-400)">${d.rating}</span>
+                ${renderStars(Math.round(d.rating))}
+              </div>
+            </td>
+            <td class="tabular-nums">${d.trips.toLocaleString()}</td>
+            <td class="tabular-nums font-semibold">${d.onTime}%</td>
+            <td>${d.license}</td>
+            <td class="tabular-nums">${d.expiry}</td>
+            <td class="tabular-nums">${d.vehicle}</td>
+            <td>${d.region}</td>
+            <td>
+              <button class="row-action" onclick="removeDriver('${d.name}', event)" title="Retire Driver">${Icons.x}</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // Update KPI values
+      document.getElementById('kpiTotalDrivers').innerText = list.length;
+      document.getElementById('kpiActiveDrivers').innerText = list.filter(d => d.status === 'On Trip').length;
+      document.getElementById('kpiSuspendedDrivers').innerText = list.filter(d => d.status === 'Suspended').length;
+      document.getElementById('kpiAvailableDrivers').innerText = list.filter(d => d.status === 'Available').length;
     }
 
-    renderDriverCards();
-    renderDriverTable();
+    function removeDriver(name, event) {
+      if (event) event.stopPropagation();
+      const list = DB.getDrivers();
+      const filtered = list.filter(d => d.name !== name);
+      DB.saveDrivers(filtered);
+      showToast('info', 'Driver Removed', `Driver profile for ${name} removed.`);
+      renderDrivers();
+    }
+
+    function openAddDriverModal() {
+      document.getElementById('addDriverOverlay').classList.add('active');
+    }
+
+    function closeAddDriverModal() {
+      document.getElementById('addDriverOverlay').classList.remove('active');
+    }
+
+    function closeDriverModalOnOverlay(e) {
+      if (e.target.id === 'addDriverOverlay') {
+        closeAddDriverModal();
+      }
+    }
+
+    function submitDriver() {
+      const name = document.getElementById('drvName').value.trim();
+      const license = document.getElementById('drvLicense').value.trim();
+      const phone = document.getElementById('drvPhone').value.trim();
+      const expiry = document.getElementById('drvExpiry').value;
+      const score = parseFloat(document.getElementById('drvScore').value);
+      const region = document.getElementById('drvRegion').value;
+
+      if (!name || !license || !phone || !expiry || isNaN(score)) {
+        showToast('error', 'Fields Empty', 'Please provide valid details for all driver profile inputs.');
+        return;
+      }
+
+      const id = 'DRV-' + String(DB.getDrivers().length + 1).padStart(3, '0');
+
+      DB.addDriver({
+        id,
+        name,
+        status: 'Available',
+        rating: score,
+        trips: 0,
+        onTime: 100,
+        phone,
+        license,
+        expiry,
+        vehicle: '—',
+        region
+      });
+
+      showToast('success', 'Driver Enrolled', `${name} successfully added to registry.`);
+      closeAddDriverModal();
+      renderDrivers();
+
+      // Clear input fields
+      document.getElementById('drvName').value = '';
+      document.getElementById('drvLicense').value = '';
+      document.getElementById('drvPhone').value = '';
+      document.getElementById('drvExpiry').value = '';
+      document.getElementById('drvScore').value = '5.0';
+    }
 
     // View toggle
     document.getElementById('viewToggle').querySelectorAll('.view-toggle-btn').forEach(btn => {
@@ -237,8 +385,9 @@
         row.style.display = row.textContent.toLowerCase().includes(query) ? '' : 'none';
       });
     });
-    // ── Trigger metric animations ──
-    animateMetrics();
+    
+    // Initial load
+    renderDrivers();
   </script>
 </body>
 </html>

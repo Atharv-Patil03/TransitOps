@@ -142,6 +142,7 @@
   <script src="src/icons.js"></script>
   <script src="src/mock-data.js"></script>
   <script src="src/charts.js"></script>
+  <script src="src/db.js"></script>
   <script src="src/app.js"></script>
   <script>
     initApp('Fuel & Costs', ['TransitOps', 'Fuel & Costs']);
@@ -153,42 +154,56 @@
     // Fuel Consumption Area Chart
     const labels = MockData.fuelData.monthly.map(d => d.month);
     Charts.areaChart(document.getElementById('fuelChart'), [
-      { label: 'Diesel', data: MockData.fuelData.monthly.map(d => d.diesel), color: '#6C5CE7' },
+      { label: 'Diesel', data: MockData.fuelData.monthly.map(d => d.diesel), color: '#00A877' },
       { label: 'Gasoline', data: MockData.fuelData.monthly.map(d => d.gasoline), color: '#2DD4BF' },
       { label: 'Electric', data: MockData.fuelData.monthly.map(d => d.electric), color: '#22C55E' }
     ], labels, { width: 700, height: 260 });
 
     // Cost Breakdown Donut
     Charts.donutChart(document.getElementById('costDonut'),
-      MockData.fuelData.costBreakdown.map(d => ({ label: d.category, value: d.amount, color: d.color })),
+      MockData.fuelData.costBreakdown.map(d => ({ label: d.category, value: d.amount, color: d.category === 'Fuel' ? '#00A877' : (d.category === 'Maintenance' ? '#10B981' : d.color) })),
       { size: 180, strokeWidth: 22, centerValue: '$2.0M', centerLabel: 'total cost' }
     );
 
     // Fuel by Vehicle Type Bar Chart
     Charts.barChart(document.getElementById('fuelByType'), [
-      { label: 'Heavy Trucks', value: 485000, color: 'linear-gradient(90deg, #6C5CE7, #8B7CF7)' },
-      { label: 'Light Trucks', value: 198000, color: 'linear-gradient(90deg, #8B7CF7, #a78bfa)' },
-      { label: 'Vans', value: 102000, color: 'linear-gradient(90deg, #2DD4BF, #66e0d0)' },
+      { label: 'Heavy Trucks', value: 485000, color: 'linear-gradient(90deg, #00A877, #10B981)' },
+      { label: 'Light Trucks', value: 198000, color: 'linear-gradient(90deg, #10B981, #2DD4BF)' },
+      { label: 'Vans', value: 102000, color: 'linear-gradient(90deg, #2DD4BF, #22C55E)' },
       { label: 'Sedans', value: 42000, color: 'linear-gradient(90deg, #F5A623, #fcd34d)' },
       { label: 'Electric', value: 18000, color: 'linear-gradient(90deg, #22C55E, #6ee7a3)' },
     ]);
 
     // Cost per KM Area Chart
     Charts.areaChart(document.getElementById('costPerKmChart'), [
-      { label: 'Cost/KM', data: MockData.fuelData.costPerKm.map(d => d.value), color: '#F5A623' }
+      { label: 'Cost/KM', data: MockData.fuelData.costPerKm.map(d => d.value), color: '#00A877' }
     ], MockData.fuelData.costPerKm.map(d => d.month), { width: 500, height: 200 });
 
-    // Top Spenders Table
+    // Top Spenders Table — dynamically computed from DB vehicles
     const tbody = document.getElementById('topSpendersBody');
-    tbody.innerHTML = MockData.fuelData.topSpenders.map((v, i) => `
+    const vehicles = DB.getVehicles();
+    // Estimate cost per km by type
+    const fuelRates = { 'Heavy Truck': 0.48, 'Light Truck': 0.28, 'Van': 0.22, 'Electric': 0.08, 'Sedan': 0.15 };
+    const maintRates = { 'Heavy Truck': 0.18, 'Light Truck': 0.12, 'Van': 0.09, 'Electric': 0.05, 'Sedan': 0.07 };
+    const efficiencies = { 'Heavy Truck': '5.2 km/L', 'Light Truck': '9.1 km/L', 'Van': '11.4 km/L', 'Electric': '—', 'Sedan': '14.2 km/L' };
+    const topSpenders = vehicles.map(v => {
+      const rate = fuelRates[v.type] || 0.25;
+      const mRate = maintRates[v.type] || 0.10;
+      const fuelCost = Math.round(v.odometer * rate);
+      const maintCost = Math.round(v.odometer * mRate);
+      const total = fuelCost + maintCost;
+      return { ...v, fuelCost, maintCost, total, eff: efficiencies[v.type] || '—' };
+    }).sort((a, b) => b.total - a.total);
+
+    tbody.innerHTML = topSpenders.map((v, i) => `
       <tr>
         <td><span class="font-semibold" style="color:var(--text-tertiary)">#${i + 1}</span></td>
-        <td><span class="font-semibold" style="color:var(--text-accent)">${v.vehicle}</span></td>
+        <td><span class="font-semibold" style="color:var(--text-accent)">${v.plate} — ${v.name}</span></td>
         <td>${v.type}</td>
-        <td class="tabular-nums">${v.fuel}</td>
-        <td class="tabular-nums">${v.maintenance}</td>
-        <td class="tabular-nums font-semibold">${v.total}</td>
-        <td class="tabular-nums">${v.efficiency}</td>
+        <td class="tabular-nums">$${v.fuelCost.toLocaleString()}</td>
+        <td class="tabular-nums">$${v.maintCost.toLocaleString()}</td>
+        <td class="tabular-nums font-semibold">$${v.total.toLocaleString()}</td>
+        <td class="tabular-nums">${v.eff}</td>
         <td><button class="row-action">${Icons.moreHorizontal}</button></td>
       </tr>
     `).join('');

@@ -282,16 +282,70 @@
   <script src="src/icons.js"></script>
   <script src="src/mock-data.js"></script>
   <script src="src/charts.js"></script>
+  <script src="src/db.js"></script>
   <script src="src/app.js"></script>
   <script>
     initApp('Alerts', ['TransitOps', 'Alerts']);
 
+    // ── Generate dynamic alerts from DB state ──
+    function generateDBAlerts() {
+      const dynamicAlerts = [];
+      const vehicles = DB.getVehicles();
+      const drivers = DB.getDrivers();
+      const today = new Date().toISOString().split('T')[0];
+
+      vehicles.filter(v => v.status === 'In Shop').forEach(v => {
+        dynamicAlerts.push({
+          id: `db-${v.id}`,
+          type: 'critical',
+          title: `Vehicle In Shop: ${v.plate}`,
+          message: `${v.name} is currently in maintenance and unavailable for dispatch.`,
+          vehicle: v.plate,
+          time: 'Live'
+        });
+      });
+
+      drivers.filter(d => d.status === 'Suspended').forEach(d => {
+        dynamicAlerts.push({
+          id: `db-${d.id}`,
+          type: 'warning',
+          title: `Suspended Driver: ${d.name}`,
+          message: `${d.name} (${d.license}) is currently suspended and cannot be assigned to trips.`,
+          vehicle: d.vehicle || '—',
+          time: 'Live'
+        });
+      });
+
+      drivers.filter(d => d.expiry && d.expiry < today).forEach(d => {
+        dynamicAlerts.push({
+          id: `db-${d.id}-exp`,
+          type: 'warning',
+          title: `Expired License: ${d.name}`,
+          message: `License ${d.license} expired on ${d.expiry}. Driver must renew before dispatch.`,
+          vehicle: d.vehicle || '—',
+          time: 'Live'
+        });
+      });
+
+      return dynamicAlerts;
+    }
+
+    const dbAlerts = generateDBAlerts();
+    // Merge dynamic alerts (prepend) with static baseline alerts from MockData
+    const allAlerts = [...dbAlerts, ...MockData.alerts];
+
+    // Update summary KPI counters dynamically
+    const critCount = allAlerts.filter(a => a.type === 'critical').length;
+    const warnCount = allAlerts.filter(a => a.type === 'warning').length;
+    document.querySelector('.kpi-card-value[style*="coral"]') && (document.querySelectorAll('.kpi-card-value')[0].textContent = critCount);
+    document.querySelector('.kpi-card-value[style*="amber"]') && (document.querySelectorAll('.kpi-card-value')[1].textContent = warnCount);
+
     function renderAlertIncidents(filter = 'all') {
       const container = document.getElementById('alertsList');
-      let filteredAlerts = MockData.alerts;
+      let filteredAlerts = allAlerts;
 
       if (filter !== 'all') {
-        filteredAlerts = MockData.alerts.filter(a => a.type === filter);
+        filteredAlerts = allAlerts.filter(a => a.type === filter);
       }
 
       if (filteredAlerts.length === 0) {
@@ -307,14 +361,15 @@
 
       container.innerHTML = filteredAlerts.map(a => {
         const iconType = a.type === 'critical' ? 'alertTriangle' : a.type === 'warning' ? 'alertTriangle' : 'info';
+        const isDB = String(a.id).startsWith('db-');
         return `
-          <div class="alert-card-premium" data-id="${a.id}">
+          <div class="alert-card-premium" data-id="${a.id}" ${isDB ? 'style="border-left:3px solid var(--coral-400)"' : ''}>
             <div class="alert-left-group">
               <div class="alert-icon-wrapper ${a.type}">
                 ${Icons[iconType]}
               </div>
               <div>
-                <div style="font-weight:700;color:var(--text-primary);letter-spacing:var(--tracking-tight);margin-bottom:2px">${a.title}</div>
+                <div style="font-weight:700;color:var(--text-primary);letter-spacing:var(--tracking-tight);margin-bottom:2px">${a.title}${isDB ? ' <span style="font-size:10px;background:var(--coral-400);color:white;padding:1px 6px;border-radius:4px;margin-left:6px">LIVE</span>' : ''}</div>
                 <div style="font-size:var(--text-sm);color:var(--text-secondary)">${a.message}</div>
                 <div style="font-size:11px;color:var(--text-tertiary);margin-top:4px;display:flex;align-items:center;gap:12px">
                   <span>${Icons.clock} ${a.time}</span>
@@ -324,7 +379,7 @@
             </div>
             <div class="flex items-center gap-3">
               ${statusPill(a.type)}
-              <button class="btn-secondary" style="padding: 6px 14px; font-size:12px" onclick="resolveIncident(${a.id})">Acknowledge</button>
+              <button class="btn-secondary" style="padding: 6px 14px; font-size:12px" onclick="resolveIncident('${a.id}')">Acknowledge</button>
             </div>
           </div>
         `;

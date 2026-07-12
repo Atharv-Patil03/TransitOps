@@ -92,8 +92,9 @@ function renderSidebar() {
   const navItems = [
     { id: 'dashboard', icon: 'dashboard', label: 'Dashboard', href: 'index.html' },
     { id: 'fleet-map', icon: 'fleetMap', label: 'Live Fleet Map', href: 'fleet-map.html' },
-    { id: 'trips', icon: 'trips', label: 'Trips', href: 'trips.html' },
+    { id: 'vehicles', icon: 'truck', label: 'Vehicles', href: 'vehicles.html' },
     { id: 'drivers', icon: 'drivers', label: 'Drivers', href: 'drivers.html' },
+    { id: 'trips', icon: 'trips', label: 'Trips', href: 'trips.html' },
     { id: 'maintenance', icon: 'maintenance', label: 'Maintenance', href: 'maintenance.html' },
     { id: 'fuel-costs', icon: 'fuel', label: 'Fuel & Costs', href: 'fuel-costs.html' },
     { id: 'reports', icon: 'reports', label: 'Reports', href: 'reports.html' },
@@ -109,7 +110,7 @@ function renderSidebar() {
 
   sidebar.className = `sidebar${isCollapsed ? ' collapsed' : ''}`;
   sidebar.innerHTML = `
-    <div class="sidebar-logo">
+    <div class="sidebar-logo" style="cursor:pointer" onclick="window.location.href='landing.html'" title="Return to Landing Page">
       <div class="sidebar-logo-mark">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polygon points="12 2 2 7 12 12 22 7 12 2"/>
@@ -137,11 +138,14 @@ function renderSidebar() {
     </nav>
     <div class="sidebar-bottom">
       <div class="sidebar-user">
-        <div class="avatar">AK</div>
+        <div class="avatar">${(() => { const u = JSON.parse(localStorage.getItem('transitops_user') || '{}'); return u.initials || 'U'; })()}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Arjun Kumar</div>
-          <div style="font-size:11px;color:var(--text-tertiary)">Fleet Manager</div>
+          <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${(() => { const u = JSON.parse(localStorage.getItem('transitops_user') || '{}'); return u.name || 'User'; })()}</div>
+          <div style="font-size:11px;color:var(--text-tertiary)">${(() => { const u = JSON.parse(localStorage.getItem('transitops_user') || '{}'); return u.role || 'Fleet Manager'; })()}</div>
         </div>
+        <button title="Logout" onclick="localStorage.removeItem('transitops_auth');localStorage.removeItem('transitops_user');window.location.href='landing.html'" style="background:none;border:none;cursor:pointer;color:var(--text-tertiary);padding:4px;border-radius:6px;transition:color 0.2s" onmouseover="this.style.color='var(--coral-400)'" onmouseout="this.style.color='var(--text-tertiary)'">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
       </div>
       <button class="sidebar-collapse-btn" onclick="toggleSidebar()" aria-label="Toggle sidebar">
         ${Icons.sidebar}
@@ -190,10 +194,6 @@ function renderHeader(pageTitle, breadcrumbs) {
       <button class="header-bell" aria-label="Notifications" onclick="showToast('info', 'Notifications', '3 new alerts since your last login')">
         ${Icons.bell}
         <span class="header-bell-badge">3</span>
-      </button>
-      <button class="btn-primary" onclick="showToast('success', 'Trip Report', 'New trip report form opened')">
-        ${Icons.plus}
-        <span>New Trip Report</span>
       </button>
       <button class="btn-icon" onclick="toggleTheme()" aria-label="Toggle theme" id="themeToggleBtn">
         ${Icons.moon}
@@ -344,6 +344,13 @@ function renderMobileNav() {
 
 // ── Init App ──
 function initApp(pageTitle, breadcrumbs) {
+  // ── Auth Guard: redirect unauthenticated users to landing page ──
+  const auth = localStorage.getItem('transitops_auth');
+  if (!auth) {
+    window.location.replace('landing.html');
+    return;
+  }
+
   initTheme();
   renderSidebar();
   renderHeader(pageTitle, breadcrumbs);

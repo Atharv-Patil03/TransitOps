@@ -64,9 +64,8 @@
             <h1>Maintenance</h1>
             <p>Schedule and track all fleet maintenance operations</p>
           </div>
-          <div class="page-header-actions">
-            <button class="btn-secondary"><span data-icon="calendar"></span> Schedule View</button>
-            <button class="btn-primary"><span data-icon="plus"></span> New Ticket</button>
+          <div class="page-header-action            <button class="btn-secondary" onclick="showToast('info', 'Schedule View', 'Schedule Calendar view initialized.')"><span data-icon="calendar"></span> Schedule View</button>
+            <button class="btn-primary" onclick="openAddMaintModal()"><span data-icon="plus"></span> New Ticket</button>
           </div>
         </div>
 
@@ -79,48 +78,119 @@
     </div>
   </div>
 
+  <!-- Add Ticket Modal Drawer -->
+  <div class="drawer-overlay" id="addMaintOverlay" onclick="closeMaintModalOnOverlay(event)">
+    <div class="drawer-card">
+      <div class="flex items-center justify-between" style="margin-bottom: var(--space-4)">
+        <div class="drawer-title">Schedule Maintenance</div>
+        <button class="row-action" style="padding: 6px" onclick="closeAddMaintModal()"><span data-icon="x"></span></button>
+      </div>
+
+      <div class="form-group">
+        <label>Select Fleet Vehicle</label>
+        <select class="select-field" id="maintVehicleSelect"></select>
+      </div>
+
+      <div class="form-group">
+        <label>Maintenance Procedure / Issue</label>
+        <div class="input-field">
+          <input type="text" placeholder="e.g. Brake Pad Replacement" id="maintType" required>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Priority Rating</label>
+          <select class="select-field" id="maintPriority">
+            <option value="low">Low Priority</option>
+            <option value="medium">Medium Priority</option>
+            <option value="high">High Priority</option>
+            <option value="critical">Critical / Overdue</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Target Due Date</label>
+          <div class="input-field">
+            <input type="date" id="maintDueDate" required>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Estimated Cost ($)</label>
+          <div class="input-field">
+            <input type="number" placeholder="250" id="maintCost" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Assigned Workshop Bay</label>
+          <select class="select-field" id="maintBay">
+            <option value="Bay 1">Workshop Bay 1</option>
+            <option value="Bay 2">Workshop Bay 2</option>
+            <option value="Bay 3">Workshop Bay 3</option>
+            <option value="Bay 4">Workshop Bay 4</option>
+            <option value="Bay 5">Workshop Bay 5</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn-primary w-full" style="padding: 12px; justify-content: center; font-size: var(--text-md); margin-top: var(--space-4)" onclick="submitMaintLog()">
+        Dispatch Ticket
+      </button>
+    </div>
+  </div>
+
   <script src="src/icons.js"></script>
   <script src="src/mock-data.js"></script>
   <script src="src/charts.js"></script>
+  <script src="src/db.js"></script>
   <script src="src/app.js"></script>
   <script>
     initApp('Maintenance', ['TransitOps', 'Maintenance']);
 
-    // Stats Bar
-    const stats = MockData.maintenanceStats;
-    document.getElementById('maintStats').innerHTML = `
-      <div class="maint-stat">
-        <div class="maint-stat-value">${stats.total}</div>
-        <div class="maint-stat-label">Total Tickets</div>
-      </div>
-      <div class="maint-stat">
-        <div class="maint-stat-value" style="color:var(--coral-400)">${stats.overdue}</div>
-        <div class="maint-stat-label">Overdue</div>
-      </div>
-      <div class="maint-stat">
-        <div class="maint-stat-value">${stats.avgResolution}</div>
-        <div class="maint-stat-label">Avg. Resolution</div>
-      </div>
-      <div class="maint-stat">
-        <div class="maint-stat-value">${stats.completionRate}%</div>
-        <div class="maint-stat-label">Completion Rate</div>
-      </div>
-      <div class="maint-stat">
-        <div class="maint-stat-value">${stats.monthlySpent}</div>
-        <div class="maint-stat-label">Monthly Spent</div>
-        <div style="font-size:var(--text-xs);color:var(--text-tertiary);margin-top:4px">of ${stats.monthlyBudget} budget</div>
-        <div class="budget-progress">
-          <div class="budget-progress-fill" style="width:${(32180/45000*100).toFixed(0)}%"></div>
-        </div>
-      </div>
-    `;
+    function renderStats() {
+      const tickets = DB.getMaintenance();
+      const scheduledCount = tickets.filter(t => t.status === 'scheduled').length;
+      const progressCount = tickets.filter(t => t.status === 'in-progress').length;
+      const completedCount = tickets.filter(t => t.status === 'completed').length;
+      const overdueCount = tickets.filter(t => t.status === 'overdue').length;
 
-    // Kanban
+      const total = tickets.length;
+      
+      document.getElementById('maintStats').innerHTML = `
+        <div class="maint-stat">
+          <div class="maint-stat-value">${total}</div>
+          <div class="maint-stat-label">Total Tickets</div>
+        </div>
+        <div class="maint-stat">
+          <div class="maint-stat-value" style="color:var(--coral-400)">${overdueCount}</div>
+          <div class="maint-stat-label">Overdue</div>
+        </div>
+        <div class="maint-stat">
+          <div class="maint-stat-value">2.4 days</div>
+          <div class="maint-stat-label">Avg. Resolution</div>
+        </div>
+        <div class="maint-stat">
+          <div class="maint-stat-value">91.2%</div>
+          <div class="maint-stat-label">Completion Rate</div>
+        </div>
+        <div class="maint-stat">
+          <div class="maint-stat-value">$32,180</div>
+          <div class="maint-stat-label">Monthly Spent</div>
+          <div style="font-size:var(--text-xs);color:var(--text-tertiary);margin-top:4px">of $45,000 budget</div>
+          <div class="budget-progress">
+            <div class="budget-progress-fill" style="width:71%"></div>
+          </div>
+        </div>
+      `;
+    }
+
     function renderKanbanCard(ticket, type) {
-      const dateLabel = type === 'completed' ? `Completed: ${ticket.completedDate}` :
-                        type === 'overdue' ? `Due: ${ticket.dueDate} (${ticket.daysOverdue}d overdue)` :
+      const dateLabel = type === 'completed' ? `Completed: ${ticket.completedDate || '2026-07-11'}` :
+                        type === 'overdue' ? `Due: ${ticket.dueDate} (${ticket.daysOverdue || 2}d overdue)` :
                         `Due: ${ticket.dueDate}`;
-      const costLabel = type === 'completed' ? `Actual: ${ticket.actualCost}` : `Est: ${ticket.estimatedCost}`;
+      const costLabel = type === 'completed' ? `Actual: ${ticket.actualCost || ticket.estimatedCost}` : `Est: ${ticket.estimatedCost}`;
 
       return `
         <div class="kanban-card" onclick="showToast('info', '${ticket.id}', '${ticket.vehicle} — ${ticket.type}')">
@@ -149,54 +219,123 @@
       `;
     }
 
-    const m = MockData.maintenance;
-    document.getElementById('kanbanBoard').innerHTML = `
-      <div class="kanban-column col-scheduled">
-        <div class="kanban-column-header">
-          <div class="kanban-column-title">
-            Scheduled <span class="kanban-count">${m.scheduled.length}</span>
+    function renderKanban() {
+      const list = DB.getMaintenance();
+      const scheduled = list.filter(t => t.status === 'scheduled');
+      const inProgress = list.filter(t => t.status === 'in-progress');
+      const completed = list.filter(t => t.status === 'completed');
+      const overdue = list.filter(t => t.status === 'overdue');
+
+      document.getElementById('kanbanBoard').innerHTML = `
+        <div class="kanban-column col-scheduled">
+          <div class="kanban-column-header">
+            <div class="kanban-column-title">
+              Scheduled <span class="kanban-count">${scheduled.length}</span>
+            </div>
+            <button class="row-action">${Icons.moreHorizontal}</button>
           </div>
-          <button class="row-action">${Icons.moreHorizontal}</button>
-        </div>
-        <div class="kanban-column-body">
-          ${m.scheduled.map(t => renderKanbanCard(t, 'scheduled')).join('')}
-        </div>
-      </div>
-      <div class="kanban-column col-inprogress">
-        <div class="kanban-column-header">
-          <div class="kanban-column-title">
-            In Progress <span class="kanban-count">${m.inProgress.length}</span>
+          <div class="kanban-column-body">
+            ${scheduled.map(t => renderKanbanCard(t, 'scheduled')).join('')}
           </div>
-          <button class="row-action">${Icons.moreHorizontal}</button>
         </div>
-        <div class="kanban-column-body">
-          ${m.inProgress.map(t => renderKanbanCard(t, 'inProgress')).join('')}
-        </div>
-      </div>
-      <div class="kanban-column col-completed">
-        <div class="kanban-column-header">
-          <div class="kanban-column-title">
-            Completed <span class="kanban-count">${m.completed.length}</span>
+        <div class="kanban-column col-inprogress">
+          <div class="kanban-column-header">
+            <div class="kanban-column-title">
+              In Progress <span class="kanban-count">${inProgress.length}</span>
+            </div>
+            <button class="row-action">${Icons.moreHorizontal}</button>
           </div>
-          <button class="row-action">${Icons.moreHorizontal}</button>
-        </div>
-        <div class="kanban-column-body">
-          ${m.completed.map(t => renderKanbanCard(t, 'completed')).join('')}
-        </div>
-      </div>
-      <div class="kanban-column col-overdue">
-        <div class="kanban-column-header">
-          <div class="kanban-column-title">
-            Overdue <span class="kanban-count">${m.overdue.length}</span>
+          <div class="kanban-column-body">
+            ${inProgress.map(t => renderKanbanCard(t, 'in-progress')).join('')}
           </div>
-          <button class="row-action">${Icons.moreHorizontal}</button>
         </div>
-        <div class="kanban-column-body">
-          ${m.overdue.map(t => renderKanbanCard(t, 'overdue')).join('')}
+        <div class="kanban-column col-completed">
+          <div class="kanban-column-header">
+            <div class="kanban-column-title">
+              Completed <span class="kanban-count">${completed.length}</span>
+            </div>
+            <button class="row-action">${Icons.moreHorizontal}</button>
+          </div>
+          <div class="kanban-column-body">
+            ${completed.map(t => renderKanbanCard(t, 'completed')).join('')}
+          </div>
         </div>
-      </div>
-    `;
-    injectIcons();
+        <div class="kanban-column col-overdue">
+          <div class="kanban-column-header">
+            <div class="kanban-column-title">
+              Overdue <span class="kanban-count">${overdue.length}</span>
+            </div>
+            <button class="row-action">${Icons.moreHorizontal}</button>
+          </div>
+          <div class="kanban-column-body">
+            ${overdue.map(t => renderKanbanCard(t, 'overdue')).join('')}
+          </div>
+        </div>
+      `;
+      injectIcons();
+    }
+
+    function populateVehicles() {
+      const select = document.getElementById('maintVehicleSelect');
+      const list = DB.getVehicles().filter(v => v.status !== 'Retired' && v.status !== 'In Shop');
+      select.innerHTML = list.map(v => `<option value="${v.plate}">${v.name} (${v.plate})</option>`).join('');
+    }
+
+    function openAddMaintModal() {
+      populateVehicles();
+      document.getElementById('addMaintOverlay').classList.add('active');
+    }
+
+    function closeAddMaintModal() {
+      document.getElementById('addMaintOverlay').classList.remove('active');
+    }
+
+    function closeMaintModalOnOverlay(e) {
+      if (e.target.id === 'addMaintOverlay') {
+        closeAddMaintModal();
+      }
+    }
+
+    function submitMaintLog() {
+      const vehicle = document.getElementById('maintVehicleSelect').value;
+      const type = document.getElementById('maintType').value.trim();
+      const priority = document.getElementById('maintPriority').value;
+      const dueDate = document.getElementById('maintDueDate').value;
+      const cost = parseInt(document.getElementById('maintCost').value);
+      const assignedTo = document.getElementById('maintBay').value;
+
+      if (!vehicle || !type || !priority || !dueDate || isNaN(cost)) {
+        showToast('error', 'Fields Empty', 'Please provide valid values for all maintenance inputs.');
+        return;
+      }
+
+      const id = 'MNT-' + String(DB.getMaintenance().length + 4505);
+
+      DB.addMaintenanceLog({
+        id,
+        vehicle,
+        type,
+        priority,
+        dueDate,
+        estimatedCost: '$' + cost,
+        assignedTo,
+        status: 'scheduled'
+      });
+
+      showToast('success', 'Asset Benched', `Vehicle ${vehicle} put into maintenance at ${assignedTo}.`);
+      closeAddMaintModal();
+      renderStats();
+      renderKanban();
+
+      // Clear values
+      document.getElementById('maintType').value = '';
+      document.getElementById('maintDueDate').value = '';
+      document.getElementById('maintCost').value = '';
+    }
+
+    // Initial renders
+    renderStats();
+    renderKanban();
   </script>
 </body>
 </html>
