@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="TransitOps Reports — Executive operational reports, revenue analytics, and route performance">
+  <title>Reports — TransitOps</title>
+  <link rel="stylesheet" href="src/design-tokens.css">
+  <link rel="stylesheet" href="src/styles.css">
+  <style>
+    .report-generate-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-3) var(--space-7);
+      background: var(--violet-gradient);
+      color: white;
+      font-size: var(--text-md);
+      font-weight: var(--weight-semibold);
+      border-radius: var(--radius-xl);
+      box-shadow: 0 4px 20px rgba(108, 92, 231, 0.3);
+      transition: all var(--duration-normal) var(--ease-out);
+      cursor: pointer;
+      border: none;
+    }
+    .report-generate-btn:hover {
+      background: var(--violet-gradient-hover);
+      box-shadow: 0 6px 28px rgba(108, 92, 231, 0.4);
+      transform: translateY(-2px);
+    }
+    .report-generate-btn:active { transform: scale(0.97); }
+
+    .report-summary-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: var(--space-4);
+      margin-top: var(--space-6);
+    }
+    .report-summary-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-2xl);
+      padding: var(--space-5);
+      text-align: center;
+    }
+    .report-summary-value {
+      font-size: var(--text-2xl);
+      font-weight: var(--weight-bold);
+      font-variant-numeric: tabular-nums;
+    }
+    .report-summary-label {
+      font-size: var(--text-xs);
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: var(--tracking-wider);
+      margin-top: var(--space-1);
+    }
+    .ontime-cell {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+    .ontime-bar {
+      flex: 1;
+      height: 6px;
+      background: var(--glass-bg);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+      max-width: 60px;
+    }
+    .ontime-bar-fill {
+      height: 100%;
+      border-radius: var(--radius-full);
+      transition: width var(--duration-chart) var(--ease-out);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside id="sidebar"></aside>
+    <div class="main-wrapper">
+      <header id="header" class="header"></header>
+      <main class="main-content">
+        <div class="page-header">
+          <div class="page-header-info">
+            <h1>Reports</h1>
+            <p>Executive reporting and operational performance analytics</p>
+          </div>
+          <div class="page-header-actions">
+            <div class="segmented-control" id="reportTimeRange">
+              <button class="segment-btn">1D</button>
+              <button class="segment-btn">1W</button>
+              <button class="segment-btn">1M</button>
+              <button class="segment-btn active">1Y</button>
+              <button class="segment-btn">All Time</button>
+            </div>
+            <button class="report-generate-btn" onclick="showToast('success', 'Report Generated', 'Your executive report has been generated and is ready for download')">
+              <span data-icon="download"></span> Generate Report
+            </button>
+          </div>
+        </div>
+
+        <!-- Hero Stat Cards -->
+        <div class="report-hero-grid mb-6">
+          <div class="report-hero-card">
+            <div class="report-hero-info">
+              <div class="report-hero-label">Total Revenue</div>
+              <div class="report-hero-value" style="color:var(--emerald-400)">$3.44M</div>
+              <div class="report-hero-sub">
+                <span class="kpi-card-delta up"><span data-icon="trendUp"></span> +12.4%</span>
+                <span style="margin-left:8px">vs previous year</span>
+              </div>
+            </div>
+            <div class="report-hero-chart" id="revenueDonut"></div>
+          </div>
+          <div class="report-hero-card">
+            <div class="report-hero-info">
+              <div class="report-hero-label">Total Operational Cost</div>
+              <div class="report-hero-value">$2.02M</div>
+              <div class="report-hero-sub">
+                <span class="kpi-card-delta up"><span data-icon="trendUp"></span> +6.1%</span>
+                <span style="margin-left:8px">vs previous year</span>
+              </div>
+            </div>
+            <div class="report-hero-chart" id="costDonut"></div>
+          </div>
+          <div class="report-hero-card">
+            <div class="report-hero-info">
+              <div class="report-hero-label">Net Profit</div>
+              <div class="report-hero-value" style="color:var(--cyan-400)">$1.42M</div>
+              <div class="report-hero-sub">
+                <span class="kpi-card-delta up"><span data-icon="trendUp"></span> +21.8%</span>
+                <span style="margin-left:8px">margin: 41.4%</span>
+              </div>
+            </div>
+            <div class="report-hero-chart" id="profitGauge"></div>
+          </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="report-summary-cards mb-6">
+          <div class="report-summary-card">
+            <div class="report-summary-value">18,942</div>
+            <div class="report-summary-label">Total Trips</div>
+          </div>
+          <div class="report-summary-card">
+            <div class="report-summary-value">$181.50</div>
+            <div class="report-summary-label">Avg Revenue/Trip</div>
+          </div>
+          <div class="report-summary-card">
+            <div class="report-summary-value">94.7%</div>
+            <div class="report-summary-label">On-Time Rate</div>
+          </div>
+          <div class="report-summary-card">
+            <div class="report-summary-value">87.3%</div>
+            <div class="report-summary-label">Fleet Utilization</div>
+          </div>
+          <div class="report-summary-card">
+            <div class="report-summary-value">4.7</div>
+            <div class="report-summary-label">Avg Driver Rating</div>
+          </div>
+        </div>
+
+        <!-- Revenue/Cost Trend Chart -->
+        <div class="glass-panel chart-container mb-6">
+          <div class="glass-panel-header">
+            <div class="glass-panel-title">Revenue & Cost Overview</div>
+          </div>
+          <div class="glass-panel-body" id="revenueCostChart"></div>
+        </div>
+
+        <!-- Route Performance Table -->
+        <div class="glass-panel">
+          <div class="glass-panel-header">
+            <div class="glass-panel-title">Route Performance</div>
+            <button class="btn-secondary"><span data-icon="download"></span> Export CSV</button>
+          </div>
+          <div class="data-table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Route <span class="sort-arrow"><span data-icon="chevronDown"></span></span></th>
+                  <th>Trips <span class="sort-arrow"><span data-icon="chevronDown"></span></span></th>
+                  <th>Revenue</th>
+                  <th>Cost</th>
+                  <th>Profit</th>
+                  <th>On-Time %</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="routeTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="src/icons.js"></script>
+  <script src="src/mock-data.js"></script>
+  <script src="src/charts.js"></script>
+  <script src="src/app.js"></script>
+  <script>
+    initApp('Reports', ['TransitOps', 'Reports']);
+
+    const r = MockData.reports;
+
+    // Revenue Donut
+    Charts.donutChart(document.getElementById('revenueDonut'), [
+      { label: 'Revenue', value: r.totalRevenue, color: '#22C55E' },
+      { label: 'Remaining Target', value: 4000000 - r.totalRevenue, color: 'rgba(255,255,255,0.06)' }
+    ], { size: 100, strokeWidth: 12, showLegend: false, centerValue: '86%', centerLabel: 'target' });
+
+    // Cost Donut
+    Charts.donutChart(document.getElementById('costDonut'), [
+      { label: 'Cost', value: r.totalCost, color: '#6C5CE7' },
+      { label: 'Budget Left', value: 2500000 - r.totalCost, color: 'rgba(255,255,255,0.06)' }
+    ], { size: 100, strokeWidth: 12, showLegend: false, centerValue: '81%', centerLabel: 'budget' });
+
+    // Profit Gauge
+    Charts.radialProgress(document.getElementById('profitGauge'), r.profitMargin, {
+      size: 100, strokeWidth: 10, color: '#2DD4BF', fontSize: 18
+    });
+
+    // Revenue/Cost Chart
+    Charts.areaChart(document.getElementById('revenueCostChart'), [
+      { label: 'Revenue', data: MockData.revenueTrend.map(d => d.revenue), color: '#22C55E' },
+      { label: 'Cost', data: MockData.revenueTrend.map(d => d.cost), color: '#6C5CE7' }
+    ], MockData.revenueTrend.map(d => d.month), { width: 900, height: 280 });
+
+    // Route Performance Table
+    const tbody = document.getElementById('routeTableBody');
+    tbody.innerHTML = r.routePerformance.map(route => {
+      const ontimeColor = route.onTime >= 95 ? 'var(--emerald-400)' :
+                          route.onTime >= 90 ? 'var(--amber-400)' : 'var(--coral-400)';
+      return `
+        <tr>
+          <td class="font-semibold">${route.route}</td>
+          <td class="tabular-nums">${route.trips.toLocaleString()}</td>
+          <td class="tabular-nums font-semibold" style="color:var(--emerald-400)">${route.revenue}</td>
+          <td class="tabular-nums">${route.cost}</td>
+          <td class="tabular-nums font-semibold" style="color:var(--cyan-400)">${route.profit}</td>
+          <td>
+            <div class="ontime-cell">
+              <span class="tabular-nums font-semibold" style="color:${ontimeColor}">${route.onTime}%</span>
+              <div class="ontime-bar">
+                <div class="ontime-bar-fill" style="width:${route.onTime}%;background:${ontimeColor}"></div>
+              </div>
+            </div>
+          </td>
+          <td><button class="row-action">${Icons.moreHorizontal}</button></td>
+        </tr>
+      `;
+    }).join('');
+
+    Charts.observeCharts();
+
+    // Time range switcher
+    document.getElementById('reportTimeRange').querySelectorAll('.segment-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#reportTimeRange .segment-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+    // ── Trigger metric animations ──
+    animateMetrics();
+  </script>
+</body>
+</html>

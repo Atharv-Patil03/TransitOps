@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="TransitOps Settings — System preferences, tracking frequencies, geofences, and developer APIs">
+  <title>Settings — TransitOps</title>
+  <link rel="stylesheet" href="src/design-tokens.css">
+  <link rel="stylesheet" href="src/styles.css">
+  <style>
+    /* ── 3D Interactive Configuration Cube Component (CSS 3D preserve-3d) ── */
+    .cube-container {
+      perspective: 800px;
+      width: 100%;
+      height: 280px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+    .cube-3d {
+      width: 120px;
+      height: 120px;
+      position: relative;
+      transform-style: preserve-3d;
+      transform: rotateX(-20deg) rotateY(30deg);
+      animation: spinCube 12s linear infinite;
+      transition: transform var(--duration-medium) var(--ease-spring);
+    }
+    .cube-container:hover .cube-3d {
+      animation-play-state: paused;
+      transform: rotateX(-45deg) rotateY(45deg) scale(1.1);
+    }
+    @keyframes spinCube {
+      0% { transform: rotateX(-20deg) rotateY(0deg); }
+      100% { transform: rotateX(-20deg) rotateY(360deg); }
+    }
+    .cube-face {
+      position: absolute;
+      width: 120px;
+      height: 120px;
+      border: 1px solid rgba(108, 92, 231, 0.4);
+      background: rgba(14, 17, 23, 0.6);
+      backdrop-filter: blur(8px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      box-shadow: inset 0 0 20px rgba(108, 92, 231, 0.15);
+      border-radius: var(--radius-xs);
+    }
+    /* Position Cube Faces */
+    .cube-face.front  { transform: rotateY(0deg) translateZ(60px); }
+    .cube-face.back   { transform: rotateY(180deg) translateZ(60px); border-color: rgba(45, 212, 191, 0.4); box-shadow: inset 0 0 20px rgba(45, 212, 191, 0.15); }
+    .cube-face.right  { transform: rotateY(90deg) translateZ(60px); }
+    .cube-face.left   { transform: rotateY(-90deg) translateZ(60px); }
+    .cube-face.top    { transform: rotateX(90deg) translateZ(60px); }
+    .cube-face.bottom { transform: rotateX(-90deg) translateZ(60px); }
+
+    .face-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--cyan-400);
+      box-shadow: 0 0 8px var(--cyan-400);
+      margin-bottom: 8px;
+    }
+    .face-indicator.pulse {
+      animation: indicatorPulse 1.5s ease-in-out infinite;
+    }
+    @keyframes indicatorPulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.4); opacity: 0.6; }
+    }
+
+    /* Form Styles */
+    .settings-row {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: var(--space-6);
+      padding: var(--space-5) 0;
+      border-bottom: 1px solid var(--border-primary);
+    }
+    .settings-row:last-child {
+      border-bottom: none;
+    }
+    .settings-section-title {
+      font-size: var(--text-md);
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: var(--space-1);
+    }
+    .settings-section-desc {
+      font-size: var(--text-sm);
+      color: var(--text-secondary);
+    }
+
+    /* Toggle switches */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+    .switch input {
+      opacity: 0; width: 0; height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: var(--border-primary);
+      transition: .3s var(--ease-out);
+      border-radius: 34px;
+      border: 1px solid var(--glass-border);
+    }
+    .slider::before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      bottom: 3px;
+      background-color: var(--text-secondary);
+      transition: .3s var(--ease-spring);
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background: var(--violet-gradient);
+      border-color: var(--violet-500);
+    }
+    input:checked + .slider::before {
+      transform: translateX(20px);
+      background-color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside id="sidebar"></aside>
+    <div class="main-wrapper">
+      <header id="header" class="header"></header>
+      <main class="main-content">
+        <div class="page-header">
+          <div class="page-header-info">
+            <h1>Platform Settings</h1>
+            <p>Configure workspace parameters, device telemetry intervals, and custom developers API access</p>
+          </div>
+          <div class="page-header-actions">
+            <button class="btn-primary" onclick="saveSettings()">Save Workspace Changes</button>
+          </div>
+        </div>
+
+        <div class="bento-grid mb-6">
+          <!-- settings config bento modules -->
+          <div class="bento-span-8">
+            <div class="glass-panel">
+              <div class="glass-panel-header">
+                <div class="glass-panel-title">Telemetry & Engine Options</div>
+              </div>
+              <div class="glass-panel-body">
+                <!-- Row 1 -->
+                <div class="settings-row">
+                  <div>
+                    <div class="settings-section-title">Telemetry Sync Interval</div>
+                    <div class="settings-section-desc">Frequency of vehicle data updates sent to platform dashboard.</div>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <div class="segmented-control">
+                      <button class="segment-btn">1s (Live)</button>
+                      <button class="segment-btn active">5s (Standard)</button>
+                      <button class="segment-btn">30s (Eco)</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Row 2 -->
+                <div class="settings-row">
+                  <div>
+                    <div class="settings-section-title">Automatic Incident Dispatch</div>
+                    <div class="settings-section-desc">Instantly dispatch repair worktickets on critical diagnostic flags.</div>
+                  </div>
+                  <div class="flex items-center">
+                    <label class="switch">
+                      <input type="checkbox" checked id="autoDispatch">
+                      <span class="slider"></span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Row 3 -->
+                <div class="settings-row">
+                  <div>
+                    <div class="settings-section-title">Default Geofence Radius</div>
+                    <div class="settings-section-desc">Telemetry radius boundary constraints in kilometers.</div>
+                  </div>
+                  <div class="flex items-center gap-4 w-full">
+                    <input type="range" min="1" max="50" value="15" class="w-full" id="geofenceRange" oninput="updateGeofenceLabel(this.value)" style="accent-color: var(--violet-400);">
+                    <span class="font-semibold tabular-nums" id="geofenceLabel" style="min-width: 48px">15 km</span>
+                  </div>
+                </div>
+
+                <!-- Row 4 (Appearance Settings) -->
+                <div class="settings-row">
+                  <div>
+                    <div class="settings-section-title">Appearance Theme Mode</div>
+                    <div class="settings-section-desc">Switch between flagship Dark Mode and Light Mode.</div>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <div class="segmented-control" id="themeSegmentControl">
+                      <button class="segment-btn" id="themeLightBtn" onclick="setThemeSettings('light')">Light Mode</button>
+                      <button class="segment-btn active" id="themeDarkBtn" onclick="setThemeSettings('dark')">Dark Mode</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3D Interactive Configuration Cube Panel -->
+          <div class="bento-span-4">
+            <div class="glass-panel">
+              <div class="glass-panel-header">
+                <div class="glass-panel-title">Workspace Core Node</div>
+                <span class="status-pill completed" style="font-size:11px">Connected</span>
+              </div>
+              <div class="glass-panel-body" style="padding:0">
+                <div class="cube-container">
+                  <div class="cube-3d">
+                    <div class="cube-face front">
+                      <div class="face-indicator pulse"></div>
+                      <span>Telemetry V2</span>
+                    </div>
+                    <div class="cube-face back">
+                      <div class="face-indicator pulse" style="background:var(--cyan-400);box-shadow: 0 0 8px var(--cyan-400);"></div>
+                      <span>APIs Gateway</span>
+                    </div>
+                    <div class="cube-face right">
+                      <span style="font-size: 20px; margin-bottom: 6px;">🌍</span>
+                      <span>Region: NA</span>
+                    </div>
+                    <div class="cube-face left">
+                      <span style="font-size: 20px; margin-bottom: 6px;">🔒</span>
+                      <span>SSL Active</span>
+                    </div>
+                    <div class="cube-face top">
+                      <span>Server Node</span>
+                    </div>
+                    <div class="cube-face bottom">
+                      <span>DB Cluster</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- API Access & Integrations -->
+        <div class="glass-panel">
+          <div class="glass-panel-header">
+            <div class="glass-panel-title">Developer Integration & Credentials</div>
+          </div>
+          <div class="glass-panel-body">
+            <div class="settings-row">
+              <div>
+                <div class="settings-section-title">Developer Live Public Token</div>
+                <div class="settings-section-desc">Authenticate custom vehicle telematics streams and integrations.</div>
+              </div>
+              <div class="flex items-center gap-3 w-full">
+                <div class="input-field w-full" style="background: var(--bg-primary); max-width: 480px;">
+                  <input type="password" value="pk_live_51Ny8HjL4pQWzZ2vX9R923c8V8d8X..." readonly id="apiTokenField">
+                  <button class="btn-ghost" style="padding:2px" onclick="toggleTokenVisibility()"><span data-icon="search"></span> Show</button>
+                </div>
+                <button class="btn-secondary" onclick="copyToken()">Copy</button>
+              </div>
+            </div>
+
+            <div class="settings-row">
+              <div>
+                <div class="settings-section-title">Webhooks Dispatch URL</div>
+                <div class="settings-section-desc">Telemetry incidents notifications JSON target webhooks payload address.</div>
+              </div>
+              <div class="w-full" style="max-width: 480px">
+                <div class="input-field">
+                  <input type="url" placeholder="https://api.yourdomain.com/telemetry-hooks" value="https://api.transitops-fleet.io/v1/telemetry-hooks">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="src/icons.js"></script>
+  <script src="src/mock-data.js"></script>
+  <script src="src/charts.js"></script>
+  <script src="src/app.js"></script>
+  <script>
+    initApp('Settings', ['TransitOps', 'Settings']);
+
+    function updateGeofenceLabel(val) {
+      document.getElementById('geofenceLabel').innerText = val + ' km';
+    }
+
+    function toggleTokenVisibility() {
+      const field = document.getElementById('apiTokenField');
+      if (field.type === 'password') {
+        field.type = 'text';
+        field.value = 'pk_live_51Ny8HjL4pQWzZ2vX9R923c8V8d8X9R3C22b8V8D8X9R3C22B8V8';
+      } else {
+        field.type = 'password';
+        field.value = 'pk_live_51Ny8HjL4pQWzZ2vX9R923c8V8d8X...';
+      }
+    }
+
+    function copyToken() {
+      navigator.clipboard.writeText('pk_live_51Ny8HjL4pQWzZ2vX9R923c8V8d8X9R3C22b8V8D8X9R3C22B8V8');
+      showToast('success', 'Token Copied', 'Developer API Token successfully copied to clipboard.');
+    }
+
+    // ── Theme settings synchronizer ──
+    function updateThemeControls() {
+      const isLight = document.documentElement.classList.contains('theme-light');
+      const lightBtn = document.getElementById('themeLightBtn');
+      const darkBtn = document.getElementById('themeDarkBtn');
+      if (isLight) {
+        lightBtn.classList.add('active');
+        darkBtn.classList.remove('active');
+      } else {
+        darkBtn.classList.add('active');
+        lightBtn.classList.remove('active');
+      }
+    }
+    updateThemeControls();
+
+    function setThemeSettings(theme) {
+      if (theme === 'light') {
+        document.documentElement.classList.add('theme-light');
+        document.documentElement.classList.remove('theme-dark');
+        localStorage.setItem('theme', 'light');
+      } else {
+        document.documentElement.classList.add('theme-dark');
+        document.documentElement.classList.remove('theme-light');
+        localStorage.setItem('theme', 'dark');
+      }
+      updateThemeControls();
+      updateThemeIcon(); // sync header icon
+      showToast('success', 'Theme Updated', `Switched workspace theme to ${theme === 'light' ? 'Light' : 'Dark'} Mode.`);
+    }
+
+    function saveSettings() {
+      showToast('success', 'Settings Saved', 'Platform configurations have been successfully synchronised.');
+    }
+
+    // ── Trigger metric animations ──
+    animateMetrics();
+  </script>
+</body>
+</html>

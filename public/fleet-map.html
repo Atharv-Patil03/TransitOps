@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="TransitOps Live Fleet Map — Real-time vehicle tracking and fleet monitoring">
+  <title>Live Fleet Map — TransitOps</title>
+  <link rel="stylesheet" href="src/design-tokens.css">
+  <link rel="stylesheet" href="src/styles.css">
+  <style>
+    .fleet-map-fullbleed {
+      position: relative;
+      height: calc(100vh - var(--header-height));
+      overflow: hidden;
+    }
+    .fleet-map-fullbleed .map-canvas {
+      height: 100%;
+      min-height: unset;
+    }
+    .fleet-map-fullbleed .map-container {
+      height: 100%;
+      border-radius: 0;
+      min-height: unset;
+    }
+    .map-right-panel {
+      position: absolute;
+      top: var(--space-4);
+      right: var(--space-4);
+      width: 320px;
+      z-index: 5;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+    .map-right-card {
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-2xl);
+      padding: var(--space-5);
+    }
+    .vehicle-list-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3);
+      border-radius: var(--radius-lg);
+      cursor: pointer;
+      transition: background var(--duration-normal) var(--ease-out);
+    }
+    .vehicle-list-item:hover {
+      background: var(--glass-bg-hover);
+    }
+    .vehicle-list-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: var(--radius-full);
+      flex-shrink: 0;
+    }
+    .vehicle-list-dot.moving { background: var(--cyan-400); box-shadow: 0 0 6px var(--cyan-400); }
+    .vehicle-list-dot.idle { background: var(--amber-400); }
+    .vehicle-list-dot.alert { background: var(--coral-400); box-shadow: 0 0 6px var(--coral-400); }
+    .vehicle-list-info { flex: 1; min-width: 0; }
+    .vehicle-list-name { font-size: var(--text-caption); font-weight: var(--weight-semibold); }
+    .vehicle-list-route { font-size: var(--text-xs); color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .vehicle-list-speed { font-size: var(--text-xs); font-weight: var(--weight-semibold); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+    .map-zoom-control {
+      position: absolute;
+      right: var(--space-4);
+      bottom: var(--space-6);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      z-index: 5;
+    }
+    .map-zoom-btn {
+      width: 36px;
+      height: 36px;
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      font-size: 18px;
+      cursor: pointer;
+      transition: all var(--duration-normal) var(--ease-out);
+    }
+    .map-zoom-btn:hover {
+      background: var(--glass-bg-hover);
+      color: var(--text-primary);
+    }
+    .map-status-bar {
+      position: absolute;
+      bottom: var(--space-4);
+      left: var(--space-4);
+      display: flex;
+      gap: var(--space-3);
+      z-index: 5;
+    }
+    .map-status-chip {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-full);
+      font-size: var(--text-sm);
+    }
+    @media (max-width: 768px) {
+      .map-right-panel { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside id="sidebar"></aside>
+    <div class="main-wrapper">
+      <header id="header" class="header"></header>
+      <div class="fleet-map-fullbleed">
+        <div class="map-container">
+          <div class="map-canvas" id="mapCanvas"></div>
+          <!-- 3D Holographic Globe wireframe -->
+          <div class="globe-3d-wrapper">
+            <div class="globe-3d">
+              <div class="globe-ring r1"></div>
+              <div class="globe-ring r2"></div>
+              <div class="globe-ring r3"></div>
+              <div class="globe-ring r4"></div>
+              <div class="globe-ring r5"></div>
+              <div class="globe-ring r6"></div>
+              <div class="globe-ring equator"></div>
+              <div class="globe-ring latitude1"></div>
+              <div class="globe-ring latitude2"></div>
+            </div>
+          </div>
+
+          <!-- Left Overlay -->
+          <div class="map-overlay" id="mapOverlay">
+            <div class="map-overlay-title">Active Fleet</div>
+            <div class="map-overlay-value">842 <span style="font-size:16px;color:var(--text-tertiary);font-weight:500">/ 1,000</span></div>
+            <div class="map-overlay-subtitle" style="margin-bottom:16px">vehicles currently tracked</div>
+            <div id="sectorBreakdown"></div>
+            <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border-primary)">
+              <div class="map-overlay-title">Route Efficiency</div>
+              <div id="mapGauge" style="margin-top:8px;text-align:center"></div>
+            </div>
+          </div>
+
+          <!-- Right Panel -->
+          <div class="map-right-panel">
+            <div class="map-right-card">
+              <div style="font-size:var(--text-xs);font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px">Vehicle Feed</div>
+              <div id="vehicleFeed"></div>
+            </div>
+          </div>
+
+          <!-- Zoom Controls -->
+          <div class="map-zoom-control">
+            <button class="map-zoom-btn" title="Zoom in">+</button>
+            <button class="map-zoom-btn" title="Zoom out">−</button>
+          </div>
+
+          <!-- Status Bar -->
+          <div class="map-status-bar">
+            <div class="map-status-chip">
+              <span class="vehicle-list-dot moving" style="width:8px;height:8px"></span>
+              <span>Moving: 8</span>
+            </div>
+            <div class="map-status-chip">
+              <span class="vehicle-list-dot idle" style="width:8px;height:8px"></span>
+              <span>Idle: 2</span>
+            </div>
+            <div class="map-status-chip">
+              <span class="vehicle-list-dot alert" style="width:8px;height:8px"></span>
+              <span>Alert: 2</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="src/icons.js"></script>
+  <script src="src/mock-data.js"></script>
+  <script src="src/charts.js"></script>
+  <script src="src/app.js"></script>
+  <script>
+    initApp('Live Fleet Map', ['TransitOps', 'Live Fleet Map']);
+
+    // Render map pins
+    const canvas = document.getElementById('mapCanvas');
+    MockData.vehicles.forEach((v, i) => {
+      const pin = document.createElement('div');
+      pin.className = `vehicle-pin ${v.status}`;
+      const x = 10 + (i % 4) * 20 + Math.random() * 10;
+      const y = 8 + Math.floor(i / 4) * 25 + Math.random() * 12;
+      pin.style.left = `${x}%`;
+      pin.style.top = `${y}%`;
+      pin.title = `${v.plate} — ${v.driver}`;
+      pin.addEventListener('click', () => {
+        showToast('info', v.plate, `${v.driver} — ${v.route} — ${v.speed} mph`);
+      });
+      canvas.appendChild(pin);
+    });
+
+    // Sector breakdown
+    const sectorEl = document.getElementById('sectorBreakdown');
+    const colors = ['#6C5CE7', '#8B7CF7', '#2DD4BF', '#F5A623', '#22C55E'];
+    sectorEl.innerHTML = MockData.sectors.map((s, i) => `
+      <div class="sector-item">
+        <span class="sector-name">${s.name}</span>
+        <div class="sector-bar">
+          <div class="sector-bar-fill" style="width:${(s.active / s.total * 100)}%;background:${colors[i]}"></div>
+        </div>
+        <span class="sector-value">${s.active}</span>
+      </div>
+    `).join('');
+
+    // Gauge
+    Charts.radialProgress(document.getElementById('mapGauge'), 91.2, {
+      size: 80, strokeWidth: 8, color: '#2DD4BF', fontSize: 16
+    });
+
+    // Vehicle Feed
+    const feedEl = document.getElementById('vehicleFeed');
+    feedEl.innerHTML = MockData.vehicles.map(v => `
+      <div class="vehicle-list-item" onclick="showToast('info', '${v.plate}', '${v.driver} — ${v.route}')">
+        <span class="vehicle-list-dot ${v.status}"></span>
+        <div class="vehicle-list-info">
+          <div class="vehicle-list-name">${v.plate} — ${v.driver}</div>
+          <div class="vehicle-list-route">${v.route}</div>
+        </div>
+        <span class="vehicle-list-speed">${v.speed > 0 ? v.speed + ' mph' : v.status === 'alert' ? 'ALERT' : 'Idle'}</span>
+      </div>
+    `).join('');
+    // ── Trigger metric animations ──
+    animateMetrics();
+  </script>
+</body>
+</html>

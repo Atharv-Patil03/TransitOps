@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="TransitOps Dashboard — Real-time fleet management, vehicle tracking, and transport analytics platform">
+  <title>Dashboard — TransitOps</title>
+  <link rel="stylesheet" href="src/design-tokens.css">
+  <link rel="stylesheet" href="src/styles.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside id="sidebar"></aside>
+    <div class="main-wrapper">
+      <header id="header" class="header"></header>
+      <main class="main-content">
+
+        <!-- KPI Cards Row -->
+        <div class="kpi-grid mb-6" id="kpiGrid"></div>
+
+        <!-- Bento Grid: Map + Analytics -->
+        <div class="bento-grid mb-6">
+          <!-- Fleet Overview Map (8/12) -->
+          <div class="bento-span-8">
+            <div class="glass-panel">
+              <div class="glass-panel-header">
+                <div class="glass-panel-title">Fleet Overview</div>
+                <div class="flex items-center gap-3">
+                  <span class="text-sm text-secondary">Live Tracking</span>
+                  <span class="status-pill moving" style="font-size:11px">● 842 Active</span>
+                </div>
+              </div>
+              <div class="glass-panel-body no-padding">
+                <div class="map-container" id="fleetMap">
+                  <div class="map-canvas" id="mapCanvas"></div>
+                  <!-- 3D Holographic Globe wireframe -->
+                  <div class="globe-3d-wrapper">
+                    <div class="globe-3d">
+                      <div class="globe-ring r1"></div>
+                      <div class="globe-ring r2"></div>
+                      <div class="globe-ring r3"></div>
+                      <div class="globe-ring r4"></div>
+                      <div class="globe-ring r5"></div>
+                      <div class="globe-ring r6"></div>
+                      <div class="globe-ring equator"></div>
+                      <div class="globe-ring latitude1"></div>
+                      <div class="globe-ring latitude2"></div>
+                    </div>
+                  </div>
+                  <div class="map-overlay" id="mapOverlay">
+                    <div class="map-overlay-title">Active Fleet</div>
+                    <div class="map-overlay-value">842 <span style="font-size:16px;color:var(--text-tertiary);font-weight:500">/ 1,000</span></div>
+                    <div class="map-overlay-subtitle" style="margin-bottom:16px">vehicles currently tracked</div>
+                    <div id="sectorBreakdown"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Rail: Alerts + Gauge (4/12) -->
+          <div class="bento-span-4">
+            <!-- Route Efficiency Gauge -->
+            <div class="glass-panel" style="margin-bottom:var(--space-4)">
+              <div class="glass-panel-header">
+                <div class="glass-panel-title">Route Efficiency</div>
+              </div>
+              <div class="glass-panel-body" style="text-align:center;padding:24px">
+                <div id="efficiencyGauge"></div>
+                <div style="margin-top:12px">
+                  <span class="kpi-card-delta up"><span data-icon="trendUp"></span> +2.4%</span>
+                  <span class="text-sm text-secondary" style="margin-left:8px">vs last week</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Alerts Feed -->
+            <div class="glass-panel">
+              <div class="glass-panel-header">
+                <div class="glass-panel-title">Recent Alerts</div>
+                <span class="header-bell-badge" style="position:static">6</span>
+              </div>
+              <div class="glass-panel-body" style="padding:8px" id="alertsFeed"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Analytics Row -->
+        <div class="bento-grid mb-6">
+          <!-- Revenue / Cost Trend (8/12) -->
+          <div class="bento-span-8">
+            <div class="glass-panel chart-container">
+              <div class="glass-panel-header">
+                <div class="glass-panel-title">Revenue & Cost Trends</div>
+                <div class="segmented-control">
+                  <button class="segment-btn active">12M</button>
+                  <button class="segment-btn">6M</button>
+                  <button class="segment-btn">3M</button>
+                </div>
+              </div>
+              <div class="glass-panel-body" id="revenueCostChart"></div>
+            </div>
+          </div>
+
+          <!-- Fleet Composition Donut (4/12) -->
+          <div class="bento-span-4">
+            <div class="glass-panel chart-container">
+              <div class="glass-panel-header">
+                <div class="glass-panel-title">Fleet Composition</div>
+              </div>
+              <div class="glass-panel-body" style="display:flex;flex-direction:column;align-items:center" id="fleetDonut"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Row: Trips Table + Weekly Forecast -->
+        <div class="bento-grid">
+          <!-- Recent Trips Table (8/12) -->
+          <div class="bento-span-8">
+            <div class="glass-panel">
+              <div class="glass-panel-header">
+                <div class="glass-panel-title">Recent Trips</div>
+                <a href="trips.html" class="btn-ghost">View All <span data-icon="chevronRight"></span></a>
+              </div>
+              <div class="data-table-wrapper">
+                <table class="data-table" id="recentTripsTable">
+                  <thead>
+                    <tr>
+                      <th>Trip ID</th>
+                      <th>Route</th>
+                      <th>Driver</th>
+                      <th>Status</th>
+                      <th>Distance</th>
+                      <th>Cost</th>
+                      <th>Rating</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="recentTripsBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Weekly Forecast (4/12) -->
+          <div class="bento-span-4">
+            <div class="glass-panel chart-container">
+              <div class="glass-panel-header">
+                <div class="glass-panel-title">Weekly Forecast</div>
+              </div>
+              <div class="glass-panel-body" id="weeklyForecast"></div>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <script src="src/icons.js"></script>
+  <script src="src/mock-data.js"></script>
+  <script src="src/charts.js"></script>
+  <script src="src/app.js"></script>
+  <script>
+    // ── Init ──
+    initApp('Dashboard', ['TransitOps', 'Dashboard']);
+
+    // ── Render KPIs ──
+    function renderKPIs() {
+      const kpis = [
+        { key: 'activeVehicles', label: 'Active Vehicles', icon: Icons.truck, sparkKey: 'activeVehicles', color: '#6C5CE7' },
+        { key: 'onTimeDelivery', label: 'On-Time Delivery', icon: Icons.check, sparkKey: 'onTimeDelivery', color: '#22C55E' },
+        { key: 'fuelEfficiency', label: 'Fuel Efficiency', icon: Icons.droplet, sparkKey: 'fuelEfficiency', color: '#2DD4BF' },
+        { key: 'fleetUtilization', label: 'Fleet Utilization', icon: Icons.target, sparkKey: 'fleetUtilization', color: '#8B7CF7' },
+        { key: 'avgTripCost', label: 'Avg. Trip Cost', icon: Icons.dollarSign, sparkKey: 'avgTripCost', color: '#F5A623' },
+        { key: 'openMaintenance', label: 'Open Maintenance', icon: Icons.tool, sparkKey: 'openMaintenance', color: '#FF5A5F' },
+      ];
+
+      const grid = document.getElementById('kpiGrid');
+      grid.innerHTML = kpis.map(kpi => {
+        const data = MockData.kpis[kpi.key];
+        const prefix = kpi.key === 'avgTripCost' ? '$' : '';
+        const suffix = data.unit && data.unit !== '$' && data.unit !== 'tickets' ? data.unit : '';
+        const unitLabel = data.unit === 'tickets' ? ' tickets' : '';
+
+        return `
+          <div class="kpi-card">
+            <div class="kpi-card-label">${kpi.label}</div>
+            <div class="kpi-card-value">
+              ${prefix}${typeof data.value === 'number' && data.value > 999 ? data.value.toLocaleString() : data.value}${suffix ? `<span class="kpi-card-unit">${suffix}</span>` : ''}${unitLabel ? `<span class="kpi-card-unit" style="font-size:14px">${unitLabel}</span>` : ''}
+            </div>
+            <div class="kpi-card-footer">
+              <span class="kpi-card-delta ${data.trend}">
+                ${data.trend === 'up' ? Icons.trendUp : Icons.trendDown}
+                ${data.trend === 'up' ? '+' : ''}${data.delta}%
+              </span>
+              <div class="kpi-card-sparkline" id="spark-${kpi.key}"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Render sparklines
+      kpis.forEach(kpi => {
+        const el = document.getElementById(`spark-${kpi.key}`);
+        if (el) Charts.sparkline(el, MockData.sparklines[kpi.sparkKey], { color: kpi.color, width: 72, height: 28 });
+      });
+    }
+    renderKPIs();
+
+    // ── Render Map Pins ──
+    function renderMapPins() {
+      const canvas = document.getElementById('mapCanvas');
+      MockData.vehicles.forEach((v, i) => {
+        const pin = document.createElement('div');
+        pin.className = `vehicle-pin ${v.status}`;
+        // Distribute pins across the map canvas
+        const x = 15 + (i % 4) * 22 + Math.random() * 8;
+        const y = 10 + Math.floor(i / 4) * 28 + Math.random() * 10;
+        pin.style.left = `${x}%`;
+        pin.style.top = `${y}%`;
+        pin.title = `${v.plate} — ${v.driver} (${v.status})`;
+        canvas.appendChild(pin);
+      });
+    }
+    renderMapPins();
+
+    // ── Render Sector Breakdown ──
+    function renderSectors() {
+      const container = document.getElementById('sectorBreakdown');
+      const colors = ['#6C5CE7', '#8B7CF7', '#2DD4BF', '#F5A623', '#22C55E'];
+      container.innerHTML = MockData.sectors.map((s, i) => `
+        <div class="sector-item">
+          <span class="sector-name">${s.name}</span>
+          <div class="sector-bar">
+            <div class="sector-bar-fill" style="width:${(s.active / s.total * 100)}%;background:${colors[i]}"></div>
+          </div>
+          <span class="sector-value">${s.active}</span>
+        </div>
+      `).join('');
+    }
+    renderSectors();
+
+    // ── Route Efficiency Gauge ──
+    function renderGauge() {
+      const el = document.getElementById('efficiencyGauge');
+      Charts.radialProgress(el, 91.2, { size: 120, strokeWidth: 10, color: '#2DD4BF', fontSize: 22 });
+    }
+    renderGauge();
+
+    // ── Alerts Feed ──
+    function renderAlerts() {
+      const container = document.getElementById('alertsFeed');
+      container.innerHTML = MockData.alerts.map(a => `
+        <div class="alert-item">
+          <div class="alert-dot ${a.type}"></div>
+          <div class="alert-content">
+            <div class="alert-title">${a.title}</div>
+            <div class="alert-message">${a.message}</div>
+            <div class="alert-time">${a.time}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+    renderAlerts();
+
+    // ── Revenue / Cost Area Chart ──
+    function renderRevenueChart() {
+      const container = document.getElementById('revenueCostChart');
+      const labels = MockData.revenueTrend.map(d => d.month);
+      Charts.areaChart(container, [
+        { label: 'Revenue', data: MockData.revenueTrend.map(d => d.revenue), color: '#6C5CE7' },
+        { label: 'Cost', data: MockData.revenueTrend.map(d => d.cost), color: '#2DD4BF' }
+      ], labels, { width: 720, height: 260 });
+    }
+    renderRevenueChart();
+
+    // ── Fleet Composition Donut ──
+    function renderFleetDonut() {
+      const container = document.getElementById('fleetDonut');
+      Charts.donutChart(container, MockData.fleetComposition.map(f => ({
+        label: f.type, value: f.count, color: f.color
+      })), { size: 180, strokeWidth: 22, centerValue: '1,000', centerLabel: 'vehicles' });
+    }
+    renderFleetDonut();
+
+    // ── Recent Trips Table ──
+    function renderTripsTable() {
+      const tbody = document.getElementById('recentTripsBody');
+      tbody.innerHTML = MockData.trips.slice(0, 7).map(t => `
+        <tr>
+          <td><span class="font-semibold" style="color:var(--text-accent)">${t.id}</span></td>
+          <td>${t.route}</td>
+          <td>
+            <div class="driver-cell">
+              <div class="avatar avatar-sm">${t.driverAvatar}</div>
+              <span>${t.driver}</span>
+            </div>
+          </td>
+          <td>${statusPill(t.status)}</td>
+          <td class="tabular-nums">${t.distance}</td>
+          <td class="tabular-nums font-semibold">${t.cost}</td>
+          <td>${t.rating > 0 ? renderStars(t.rating) : '<span class="text-muted">—</span>'}</td>
+          <td><button class="row-action">${Icons.moreHorizontal}</button></td>
+        </tr>
+      `).join('');
+    }
+    renderTripsTable();
+
+    // ── Weekly Forecast Vertical Bars ──
+    function renderForecast() {
+      const container = document.getElementById('weeklyForecast');
+      Charts.verticalBarChart(container, MockData.weeklyForecast.map(d => ({
+        label: d.day, value: d.trips, target: d.target
+      })), { barWidth: 28, height: 140 });
+    }
+    renderForecast();
+
+    // ── Animate charts on scroll ──
+    Charts.observeCharts();
+
+    // ── Segmented control clicks ──
+    document.querySelectorAll('.segmented-control').forEach(control => {
+      control.querySelectorAll('.segment-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          control.querySelectorAll('.segment-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+        });
+      });
+    });
+    // ── Trigger metric animations ──
+    animateMetrics();
+  </script>
+</body>
+</html>

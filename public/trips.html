@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="TransitOps Trips — Manage and track all transport trips, routes, and deliveries">
+  <title>Trips — TransitOps</title>
+  <link rel="stylesheet" href="src/design-tokens.css">
+  <link rel="stylesheet" href="src/styles.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside id="sidebar"></aside>
+    <div class="main-wrapper">
+      <header id="header" class="header"></header>
+      <main class="main-content">
+        <div class="page-header">
+          <div class="page-header-info">
+            <h1>Trips</h1>
+            <p>Manage and monitor all transport operations</p>
+          </div>
+          <div class="page-header-actions">
+            <button class="btn-secondary"><span data-icon="download"></span> Export</button>
+            <button class="btn-primary"><span data-icon="plus"></span> New Trip</button>
+          </div>
+        </div>
+
+        <!-- KPI Summary -->
+        <div class="kpi-grid mb-6">
+          <div class="kpi-card">
+            <div class="kpi-card-label">Total Trips</div>
+            <div class="kpi-card-value">18,942</div>
+            <div class="kpi-card-footer">
+              <span class="kpi-card-delta up"><span data-icon="trendUp"></span> +5.2%</span>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-card-label">Active Trips</div>
+            <div class="kpi-card-value">127</div>
+            <div class="kpi-card-footer">
+              <span class="status-pill in-transit">In Transit</span>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-card-label">Avg. Distance</div>
+            <div class="kpi-card-value">186<span class="kpi-card-unit">mi</span></div>
+            <div class="kpi-card-footer">
+              <span class="kpi-card-delta down"><span data-icon="trendDown"></span> -1.4%</span>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-card-label">On-Time Rate</div>
+            <div class="kpi-card-value">94.7<span class="kpi-card-unit">%</span></div>
+            <div class="kpi-card-footer">
+              <span class="kpi-card-delta up"><span data-icon="trendUp"></span> +1.8%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Trips Table -->
+        <div class="glass-panel">
+          <div class="table-toolbar">
+            <div class="table-toolbar-left">
+              <div class="segmented-control" id="statusFilter">
+                <button class="segment-btn active" data-filter="all">All</button>
+                <button class="segment-btn" data-filter="delivered">Delivered</button>
+                <button class="segment-btn" data-filter="in-transit">In Transit</button>
+                <button class="segment-btn" data-filter="delayed">Delayed</button>
+                <button class="segment-btn" data-filter="cancelled">Cancelled</button>
+              </div>
+            </div>
+            <div class="table-toolbar-right">
+              <div class="input-field" style="min-width:200px">
+                <span style="color:var(--text-tertiary)"><span data-icon="search"></span></span>
+                <input type="text" placeholder="Search trips..." id="tripSearch" />
+              </div>
+              <div class="date-picker">
+                <span data-icon="calendar"></span>
+                <span>Jul 1 – Jul 12, 2026</span>
+              </div>
+              <button class="btn-ghost"><span data-icon="filter"></span> Filter</button>
+            </div>
+          </div>
+          <div class="data-table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th><div class="checkbox" onclick="this.classList.toggle('checked')"></div></th>
+                  <th>Trip ID <span class="sort-arrow"><span data-icon="chevronDown"></span></span></th>
+                  <th>Route <span class="sort-arrow"><span data-icon="chevronDown"></span></span></th>
+                  <th>Driver</th>
+                  <th>Vehicle</th>
+                  <th>Status</th>
+                  <th>Distance</th>
+                  <th>Duration</th>
+                  <th>Cost</th>
+                  <th>Rating</th>
+                  <th>Date</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="tripsTableBody"></tbody>
+            </table>
+          </div>
+          <div class="pagination" id="tripsPagination">
+            <button class="page-btn"><span data-icon="chevronLeft"></span></button>
+            <button class="page-btn active">1</button>
+            <button class="page-btn">2</button>
+            <button class="page-btn">3</button>
+            <button class="page-btn">...</button>
+            <button class="page-btn">12</button>
+            <button class="page-btn"><span data-icon="chevronRight"></span></button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="src/icons.js"></script>
+  <script src="src/mock-data.js"></script>
+  <script src="src/charts.js"></script>
+  <script src="src/app.js"></script>
+  <script>
+    initApp('Trips', ['TransitOps', 'Trips']);
+
+    let currentFilter = 'all';
+
+    function renderTrips(filter) {
+      const tbody = document.getElementById('tripsTableBody');
+      let trips = MockData.trips;
+      if (filter && filter !== 'all') {
+        trips = trips.filter(t => t.status === filter);
+      }
+
+      tbody.innerHTML = trips.map(t => `
+        <tr>
+          <td><div class="checkbox" onclick="this.classList.toggle('checked')"></div></td>
+          <td><span class="font-semibold" style="color:var(--text-accent)">${t.id}</span></td>
+          <td>${t.route}</td>
+          <td>
+            <div class="driver-cell">
+              <div class="avatar avatar-sm">${t.driverAvatar}</div>
+              <span>${t.driver}</span>
+            </div>
+          </td>
+          <td class="tabular-nums">${t.vehicle}</td>
+          <td>${statusPill(t.status)}</td>
+          <td class="tabular-nums">${t.distance}</td>
+          <td class="tabular-nums">${t.duration}</td>
+          <td class="tabular-nums font-semibold">${t.cost}</td>
+          <td>${t.rating > 0 ? renderStars(t.rating) : '<span class="text-muted">—</span>'}</td>
+          <td class="text-secondary">${t.date}</td>
+          <td><button class="row-action">${Icons.moreHorizontal}</button></td>
+        </tr>
+      `).join('');
+    }
+
+    renderTrips('all');
+
+    // Status filter
+    document.getElementById('statusFilter').querySelectorAll('.segment-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#statusFilter .segment-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = btn.dataset.filter;
+        renderTrips(currentFilter);
+      });
+    });
+
+    // Search
+    document.getElementById('tripSearch').addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase();
+      const rows = document.querySelectorAll('#tripsTableBody tr');
+      rows.forEach(row => {
+        row.style.display = row.textContent.toLowerCase().includes(query) ? '' : 'none';
+      });
+    });
+
+    // Pagination clicks
+    document.querySelectorAll('.pagination .page-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.pagination .page-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+    // ── Trigger metric animations ──
+    animateMetrics();
+  </script>
+</body>
+</html>
