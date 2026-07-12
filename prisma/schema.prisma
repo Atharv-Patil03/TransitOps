@@ -1,0 +1,239 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Users & Auth ─────────────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String?
+  role      Role     @default(DRIVER)
+  driver    Driver?
+  bookings  Booking[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+}
+
+// ─── Fleet Models ─────────────────────────────────────────────────────────────
+
+model Vehicle {
+  id           String        @id @default(cuid())
+  // Identification
+  number       String        @unique
+  licensePlate String        @unique
+  make         String
+  model        String
+  year         Int
+  // Type & Capacity
+  type         VehicleType
+  capacity     Int
+  // Operational
+  status       VehicleStatus @default(ACTIVE)
+  mileage      Float         @default(0)
+  fuelType     FuelType      @default(DIESEL)
+  // Relations
+  trips        Trip[]
+  maintenances MaintenanceRecord[]
+  fuelLogs     FuelLog[]
+  driver       Driver?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([status])
+  @@index([type])
+}
+
+model Driver {
+  id             String   @id @default(cuid())
+  // Identity
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String   @unique
+  licenseNumber  String   @unique
+  licenseExpiry  DateTime
+  // Stats
+  totalTrips     Int      @default(0)
+  rating         Float    @default(5.0)
+  status         DriverStatus @default(AVAILABLE)
+  // Assigned vehicle
+  vehicle        Vehicle? @relation(fields: [vehicleId], references: [id])
+  vehicleId      String?  @unique
+  // Relations
+  trips          Trip[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([status])
+  @@index([licenseNumber])
+}
+
+model Route {
+  id          String   @id @default(cuid())
+  name        String
+  origin      String
+  destination String
+  stops       Stop[]
+  trips       Trip[]
+  distance    Float    @default(0)   // km
+  createdAt   DateTime @default(now())
+}
+
+model Stop {
+  id        String   @id @default(cuid())
+  name      String
+  latitude  Float
+  longitude Float
+  route     Route    @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  routeId   String
+  order     Int
+}
+
+model Trip {
+  id          String     @id @default(cuid())
+  route       Route      @relation(fields: [routeId], references: [id])
+  routeId     String
+  vehicle     Vehicle    @relation(fields: [vehicleId], references: [id])
+  vehicleId   String
+  driver      Driver?    @relation(fields: [driverId], references: [id])
+  driverId    String?
+  departureAt DateTime
+  arrivalAt   DateTime
+  status      TripStatus @default(SCHEDULED)
+  notes       String?
+  bookings    Booking[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([status])
+  @@index([departureAt])
+}
+
+model Booking {
+  id        String        @id @default(cuid())
+  user      User          @relation(fields: [userId], references: [id])
+  userId    String
+  trip      Trip          @relation(fields: [tripId], references: [id])
+  tripId    String
+  seats     Int           @default(1)
+  status    BookingStatus @default(CONFIRMED)
+  createdAt DateTime      @default(now())
+
+  @@index([userId])
+  @@index([tripId])
+}
+
+model MaintenanceRecord {
+  id          String            @id @default(cuid())
+  vehicle     Vehicle           @relation(fields: [vehicleId], references: [id])
+  vehicleId   String
+  type        MaintenanceType
+  description String
+  cost        Float
+  performedAt DateTime
+  nextDueAt   DateTime?
+  mileageAt   Float
+  technician  String?
+  status      MaintenanceStatus @default(COMPLETED)
+  createdAt   DateTime          @default(now())
+
+  @@index([vehicleId])
+  @@index([type])
+}
+
+model FuelLog {
+  id         String   @id @default(cuid())
+  vehicle    Vehicle  @relation(fields: [vehicleId], references: [id])
+  vehicleId  String
+  liters     Float
+  costPerLiter Float
+  totalCost  Float
+  mileageAt  Float
+  station    String?
+  loggedAt   DateTime @default(now())
+
+  @@index([vehicleId])
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  FLEET_MANAGER
+  DRIVER
+  SAFETY_OFFICER
+  FINANCIAL_ANALYST
+  ADMIN
+}
+
+enum VehicleType {
+  BUS
+  MINIBUS
+  TRUCK
+  VAN
+  CAR
+  TRAIN
+  METRO
+  FERRY
+}
+
+enum VehicleStatus {
+  ACTIVE
+  MAINTENANCE
+  OUT_OF_SERVICE
+  RETIRED
+}
+
+enum FuelType {
+  DIESEL
+  PETROL
+  ELECTRIC
+  HYBRID
+  CNG
+}
+
+enum DriverStatus {
+  AVAILABLE
+  ON_TRIP
+  OFF_DUTY
+  SUSPENDED
+}
+
+enum TripStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  DELAYED
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+  PENDING
+  COMPLETED
+}
+
+enum MaintenanceType {
+  SCHEDULED
+  EMERGENCY
+  INSPECTION
+  OIL_CHANGE
+  TIRE_ROTATION
+  BRAKE_SERVICE
+  ENGINE_REPAIR
+  BODY_REPAIR
+}
+
+enum MaintenanceStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
