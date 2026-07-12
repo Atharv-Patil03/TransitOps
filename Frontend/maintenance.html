@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="TransitOps Maintenance — Schedule, track, and manage fleet maintenance operations">
+  <title>Maintenance — TransitOps</title>
+  <link rel="stylesheet" href="src/design-tokens.css">
+  <link rel="stylesheet" href="src/styles.css">
+  <style>
+    .kanban-column.col-scheduled .kanban-column-header { border-top: 3px solid var(--violet-400); border-radius: var(--radius-2xl); }
+    .kanban-column.col-inprogress .kanban-column-header { border-top: 3px solid var(--cyan-400); border-radius: var(--radius-2xl); }
+    .kanban-column.col-completed .kanban-column-header { border-top: 3px solid var(--emerald-400); border-radius: var(--radius-2xl); }
+    .kanban-column.col-overdue .kanban-column-header { border-top: 3px solid var(--coral-400); border-radius: var(--radius-2xl); }
+
+    .maint-stat-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: var(--space-4);
+      margin-bottom: var(--space-7);
+    }
+    .maint-stat {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-2xl);
+      padding: var(--space-5);
+      text-align: center;
+    }
+    .maint-stat-value {
+      font-size: var(--text-3xl);
+      font-weight: var(--weight-bold);
+      font-variant-numeric: tabular-nums;
+    }
+    .maint-stat-label {
+      font-size: var(--text-xs);
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: var(--tracking-wider);
+      margin-top: var(--space-1);
+    }
+    .budget-progress {
+      margin-top: var(--space-3);
+      height: 6px;
+      background: var(--glass-bg);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+    }
+    .budget-progress-fill {
+      height: 100%;
+      border-radius: var(--radius-full);
+      background: var(--violet-gradient);
+      transition: width var(--duration-chart) var(--ease-out);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside id="sidebar"></aside>
+    <div class="main-wrapper">
+      <header id="header" class="header"></header>
+      <main class="main-content">
+        <div class="page-header">
+          <div class="page-header-info">
+            <h1>Maintenance</h1>
+            <p>Schedule and track all fleet maintenance operations</p>
+          </div>
+          <div class="page-header-actions">
+            <button class="btn-secondary"><span data-icon="calendar"></span> Schedule View</button>
+            <button class="btn-primary"><span data-icon="plus"></span> New Ticket</button>
+          </div>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="maint-stat-bar" id="maintStats"></div>
+
+        <!-- Kanban Board -->
+        <div class="kanban-board" id="kanbanBoard"></div>
+      </main>
+    </div>
+  </div>
+
+  <script src="src/icons.js"></script>
+  <script src="src/mock-data.js"></script>
+  <script src="src/charts.js"></script>
+  <script src="src/app.js"></script>
+  <script>
+    initApp('Maintenance', ['TransitOps', 'Maintenance']);
+
+    // Stats Bar
+    const stats = MockData.maintenanceStats;
+    document.getElementById('maintStats').innerHTML = `
+      <div class="maint-stat">
+        <div class="maint-stat-value">${stats.total}</div>
+        <div class="maint-stat-label">Total Tickets</div>
+      </div>
+      <div class="maint-stat">
+        <div class="maint-stat-value" style="color:var(--coral-400)">${stats.overdue}</div>
+        <div class="maint-stat-label">Overdue</div>
+      </div>
+      <div class="maint-stat">
+        <div class="maint-stat-value">${stats.avgResolution}</div>
+        <div class="maint-stat-label">Avg. Resolution</div>
+      </div>
+      <div class="maint-stat">
+        <div class="maint-stat-value">${stats.completionRate}%</div>
+        <div class="maint-stat-label">Completion Rate</div>
+      </div>
+      <div class="maint-stat">
+        <div class="maint-stat-value">${stats.monthlySpent}</div>
+        <div class="maint-stat-label">Monthly Spent</div>
+        <div style="font-size:var(--text-xs);color:var(--text-tertiary);margin-top:4px">of ${stats.monthlyBudget} budget</div>
+        <div class="budget-progress">
+          <div class="budget-progress-fill" style="width:${(32180/45000*100).toFixed(0)}%"></div>
+        </div>
+      </div>
+    `;
+
+    // Kanban
+    function renderKanbanCard(ticket, type) {
+      const dateLabel = type === 'completed' ? `Completed: ${ticket.completedDate}` :
+                        type === 'overdue' ? `Due: ${ticket.dueDate} (${ticket.daysOverdue}d overdue)` :
+                        `Due: ${ticket.dueDate}`;
+      const costLabel = type === 'completed' ? `Actual: ${ticket.actualCost}` : `Est: ${ticket.estimatedCost}`;
+
+      return `
+        <div class="kanban-card" onclick="showToast('info', '${ticket.id}', '${ticket.vehicle} — ${ticket.type}')">
+          <div class="flex items-center justify-between" style="margin-bottom:8px">
+            <span class="text-xs text-tertiary">${ticket.id}</span>
+            ${priorityBadge(ticket.priority)}
+          </div>
+          <div class="kanban-card-title">${ticket.type}</div>
+          <div class="kanban-card-meta">
+            ${Icons.truck} ${ticket.vehicle}
+          </div>
+          <div class="kanban-card-meta">
+            ${Icons.clock} ${dateLabel}
+          </div>
+          ${ticket.progress !== undefined ? `
+            <div class="kanban-card-progress">
+              <div class="kanban-card-progress-fill" style="width:${ticket.progress}%"></div>
+            </div>
+            <div class="text-xs text-tertiary" style="margin-top:4px">${ticket.progress}% complete</div>
+          ` : ''}
+          <div class="kanban-card-footer">
+            <span class="text-sm font-semibold">${costLabel}</span>
+            <span class="text-xs text-tertiary">${ticket.assignedTo}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    const m = MockData.maintenance;
+    document.getElementById('kanbanBoard').innerHTML = `
+      <div class="kanban-column col-scheduled">
+        <div class="kanban-column-header">
+          <div class="kanban-column-title">
+            Scheduled <span class="kanban-count">${m.scheduled.length}</span>
+          </div>
+          <button class="row-action">${Icons.moreHorizontal}</button>
+        </div>
+        <div class="kanban-column-body">
+          ${m.scheduled.map(t => renderKanbanCard(t, 'scheduled')).join('')}
+        </div>
+      </div>
+      <div class="kanban-column col-inprogress">
+        <div class="kanban-column-header">
+          <div class="kanban-column-title">
+            In Progress <span class="kanban-count">${m.inProgress.length}</span>
+          </div>
+          <button class="row-action">${Icons.moreHorizontal}</button>
+        </div>
+        <div class="kanban-column-body">
+          ${m.inProgress.map(t => renderKanbanCard(t, 'inProgress')).join('')}
+        </div>
+      </div>
+      <div class="kanban-column col-completed">
+        <div class="kanban-column-header">
+          <div class="kanban-column-title">
+            Completed <span class="kanban-count">${m.completed.length}</span>
+          </div>
+          <button class="row-action">${Icons.moreHorizontal}</button>
+        </div>
+        <div class="kanban-column-body">
+          ${m.completed.map(t => renderKanbanCard(t, 'completed')).join('')}
+        </div>
+      </div>
+      <div class="kanban-column col-overdue">
+        <div class="kanban-column-header">
+          <div class="kanban-column-title">
+            Overdue <span class="kanban-count">${m.overdue.length}</span>
+          </div>
+          <button class="row-action">${Icons.moreHorizontal}</button>
+        </div>
+        <div class="kanban-column-body">
+          ${m.overdue.map(t => renderKanbanCard(t, 'overdue')).join('')}
+        </div>
+      </div>
+    `;
+    injectIcons();
+  </script>
+</body>
+</html>
