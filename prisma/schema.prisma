@@ -1,0 +1,61 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Emulated enums in application layer:
+// TripStatus: "DRAFT", "DISPATCHED", "COMPLETED", "CANCELLED"
+// VehicleStatus: "AVAILABLE", "ON_TRIP", "IN_SHOP", "RETIRED"
+// DriverStatus: "AVAILABLE", "ON_TRIP", "SUSPENDED", "EXPIRED_LICENSE"
+// MaintenanceStatus: "INITIATED", "COMPLETED"
+
+model Trip {
+  id              String   @id @default(uuid())
+  source          String
+  destination     String
+  cargoDesc       String
+  cargoWeight     Float
+  plannedDist     Float
+  actualDist      Float?
+  finalOdometer   Float?
+  fuelUsed        Float?
+  departureDate   DateTime
+  expectedArrival DateTime
+  status          String   @default("DRAFT") // TripStatus
+  notes           String?
+  vehicleId       String
+  vehicle         Vehicle  @relation(fields: [vehicleId], references: [id])
+  driverId        String
+  driver          Driver   @relation(fields: [driverId], references: [id])
+}
+
+model Maintenance {
+  id          String    @id @default(uuid())
+  vehicleId   String
+  vehicle     Vehicle   @relation(fields: [vehicleId], references: [id])
+  garage      String
+  description String
+  cost        Float
+  startDate   DateTime
+  endDate     DateTime?
+  status      String    @default("INITIATED") // MaintenanceStatus
+}
+
+model Vehicle {
+  id           String        @id @default(uuid())
+  capacity     Float
+  status       String        @default("AVAILABLE") // VehicleStatus
+  trips        Trip[]
+  maintenances Maintenance[]
+}
+
+model Driver {
+  id            String   @id @default(uuid())
+  status        String   @default("AVAILABLE") // DriverStatus
+  licenseExpiry DateTime
+  trips         Trip[]
+}
