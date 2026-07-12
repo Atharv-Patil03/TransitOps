@@ -58,30 +58,28 @@ export function Badge({
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 
-type VehicleStatus = "ACTIVE" | "MAINTENANCE" | "OUT_OF_SERVICE" | "RETIRED";
+type VehicleStatus = "AVAILABLE" | "ON_TRIP" | "IN_SHOP" | "RETIRED";
 type DriverStatus  = "AVAILABLE" | "ON_TRIP" | "OFF_DUTY" | "SUSPENDED";
-type TripStatus    = "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "DELAYED";
+type TripStatus    = "DRAFT" | "DISPATCHED" | "COMPLETED" | "CANCELLED";
 type MaintenanceStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 
 const STATUS_MAP: Record<string, { variant: BadgeVariant; label: string; dot?: boolean }> = {
   // Vehicle
-  ACTIVE:          { variant: "emerald", label: "Active",          dot: true },
-  MAINTENANCE:     { variant: "amber",   label: "Maintenance",     dot: true },
-  OUT_OF_SERVICE:  { variant: "rose",    label: "Out of Service",  dot: true },
-  RETIRED:         { variant: "slate",   label: "Retired",         dot: false },
-  // Driver
   AVAILABLE:       { variant: "emerald", label: "Available",       dot: true },
   ON_TRIP:         { variant: "cyan",    label: "On Trip",         dot: true },
+  IN_SHOP:         { variant: "amber",   label: "In Shop",         dot: true },
+  RETIRED:         { variant: "slate",   label: "Retired",         dot: false },
+  // Driver
   OFF_DUTY:        { variant: "slate",   label: "Off Duty",        dot: false },
   SUSPENDED:       { variant: "rose",    label: "Suspended",       dot: true },
   // Trip
-  SCHEDULED:       { variant: "blue",    label: "Scheduled",       dot: false },
-  IN_PROGRESS:     { variant: "cyan",    label: "In Progress",     dot: true },
+  DRAFT:           { variant: "slate",   label: "Draft",           dot: false },
+  DISPATCHED:      { variant: "blue",    label: "Dispatched",      dot: true },
   COMPLETED:       { variant: "emerald", label: "Completed",       dot: false },
   CANCELLED:       { variant: "rose",    label: "Cancelled",       dot: false },
-  DELAYED:         { variant: "amber",   label: "Delayed",         dot: true },
   // Maintenance
   PENDING:         { variant: "amber",   label: "Pending",         dot: true },
+  IN_PROGRESS:     { variant: "cyan",    label: "In Progress",     dot: true },
   // Bookings
   CONFIRMED:       { variant: "emerald", label: "Confirmed",       dot: false },
 };

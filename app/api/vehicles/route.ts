@@ -26,6 +26,8 @@ export async function POST(req: NextRequest) {
       year,
       status,
       mileage,
+      odometer,
+      acquisitionCost,
       fuelType,
     } = body;
 
@@ -45,8 +47,9 @@ export async function POST(req: NextRequest) {
         make: make || "Generic",
         model: model || "Vehicle",
         year: year ? Number(year) : new Date().getFullYear(),
-        status: status || "ACTIVE",
-        mileage: mileage ? Number(mileage) : 0,
+        status: (status as any) || "AVAILABLE",
+        odometer: odometer ? Number(odometer) : (mileage ? Number(mileage) : 0),
+        acquisitionCost: acquisitionCost ? Number(acquisitionCost) : 0,
         fuelType: fuelType || "DIESEL",
       },
     });

@@ -26,27 +26,29 @@ model User {
 // ─── Fleet Models ─────────────────────────────────────────────────────────────
 
 model Vehicle {
-  id           String        @id @default(cuid())
+  id              String        @id @default(cuid())
   // Identification
-  number       String        @unique
-  licensePlate String        @unique
-  make         String
-  model        String
-  year         Int
+  number          String        @unique  // Registration Number (unique)
+  licensePlate    String        @unique
+  make            String
+  model           String        // Vehicle Name/Model
+  year            Int
   // Type & Capacity
-  type         VehicleType
-  capacity     Int
+  type            VehicleType
+  capacity        Int           // Maximum Load Capacity (kg)
   // Operational
-  status       VehicleStatus @default(ACTIVE)
-  mileage      Float         @default(0)
-  fuelType     FuelType      @default(DIESEL)
+  status          VehicleStatus @default(AVAILABLE)
+  odometer        Float         @default(0)   // Odometer (km)
+  acquisitionCost Float         @default(0)   // Acquisition Cost ($)
+  fuelType        FuelType      @default(DIESEL)
   // Relations
-  trips        Trip[]
-  maintenances MaintenanceRecord[]
-  fuelLogs     FuelLog[]
-  driver       Driver?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  trips           Trip[]
+  maintenances    MaintenanceRecord[]
+  fuelLogs        FuelLog[]
+  expenses        Expense[]
+  driver          Driver?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   @@index([status])
   @@index([type])
@@ -58,10 +60,12 @@ model Driver {
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId         String   @unique
   licenseNumber  String   @unique
+  licenseCategory String   @default("Commercial") // License Category (A, B, C, Heavy, etc.)
   licenseExpiry  DateTime
+  contactNumber  String   @default("")           // Contact Number
+  safetyScore    Float    @default(100.0)        // Safety Score (out of 100)
   // Stats
   totalTrips     Int      @default(0)
-  rating         Float    @default(5.0)
   status         DriverStatus @default(AVAILABLE)
   // Assigned vehicle
   vehicle        Vehicle? @relation(fields: [vehicleId], references: [id])
@@ -97,20 +101,23 @@ model Stop {
 }
 
 model Trip {
-  id          String     @id @default(cuid())
-  route       Route      @relation(fields: [routeId], references: [id])
-  routeId     String
-  vehicle     Vehicle    @relation(fields: [vehicleId], references: [id])
-  vehicleId   String
-  driver      Driver?    @relation(fields: [driverId], references: [id])
-  driverId    String?
-  departureAt DateTime
-  arrivalAt   DateTime
-  status      TripStatus @default(SCHEDULED)
-  notes       String?
-  bookings    Booking[]
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id              String     @id @default(cuid())
+  route           Route      @relation(fields: [routeId], references: [id])
+  routeId         String
+  vehicle         Vehicle    @relation(fields: [vehicleId], references: [id])
+  vehicleId       String
+  driver          Driver?    @relation(fields: [driverId], references: [id])
+  driverId        String?
+  departureAt     DateTime
+  arrivalAt       DateTime
+  status          TripStatus @default(DRAFT)
+  cargoWeight     Float      @default(0)    // Cargo Weight (kg)
+  plannedDistance Float      @default(0)    // Planned Distance (km)
+  revenue         Float      @default(0)    // Revenue ($) for ROI calculation
+  notes           String?
+  bookings        Booking[]
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
   @@index([status])
   @@index([departureAt])
@@ -139,7 +146,7 @@ model MaintenanceRecord {
   cost        Float
   performedAt DateTime
   nextDueAt   DateTime?
-  mileageAt   Float
+  mileageAt   Float             // Odometer at performance
   technician  String?
   status      MaintenanceStatus @default(COMPLETED)
   createdAt   DateTime          @default(now())
@@ -149,15 +156,27 @@ model MaintenanceRecord {
 }
 
 model FuelLog {
-  id         String   @id @default(cuid())
-  vehicle    Vehicle  @relation(fields: [vehicleId], references: [id])
-  vehicleId  String
-  liters     Float
+  id           String   @id @default(cuid())
+  vehicle      Vehicle  @relation(fields: [vehicleId], references: [id])
+  vehicleId    String
+  liters       Float
   costPerLiter Float
-  totalCost  Float
-  mileageAt  Float
-  station    String?
-  loggedAt   DateTime @default(now())
+  totalCost    Float
+  mileageAt    Float    // Odometer at fill-up
+  station      String?
+  loggedAt     DateTime @default(now())
+
+  @@index([vehicleId])
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  vehicle     Vehicle  @relation(fields: [vehicleId], references: [id])
+  vehicleId   String
+  type        String   // e.g. TOLL, PERMIT, FINE, OTHER
+  amount      Float
+  description String?
+  date        DateTime @default(now())
 
   @@index([vehicleId])
 }
@@ -184,9 +203,9 @@ enum VehicleType {
 }
 
 enum VehicleStatus {
-  ACTIVE
-  MAINTENANCE
-  OUT_OF_SERVICE
+  AVAILABLE
+  ON_TRIP
+  IN_SHOP
   RETIRED
 }
 
@@ -206,11 +225,10 @@ enum DriverStatus {
 }
 
 enum TripStatus {
-  SCHEDULED
-  IN_PROGRESS
+  DRAFT
+  DISPATCHED
   COMPLETED
   CANCELLED
-  DELAYED
 }
 
 enum BookingStatus {
